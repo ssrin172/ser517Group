@@ -27,3 +27,27 @@ Design RESTful or GraphQL APIs for data interaction.
 Implement authentication and authorization protocols.
 Create data validation and error-handling mechanisms.
 Deliverables: Functional API endpoints, database schema, and technical documentation.
+
+Phase 3: Bluetooth Beacon Integration
+Duration: 1-2 weeks
+Objectives:
+
+Configure Beacons:
+Select and configure Bluetooth beacons for required range and frequency.
+Calibrate beacons for optimal performance.
+Implement Scanning in App:
+Develop functionality to detect and connect to beacons.
+Implement data collection and transmission from beacons to backend.
+Deliverables: Beacon configuration files, initial integration testing report.
+
+Phase 4: Frontend Development
+Duration: 1-2 weeks
+Objectives:
+
+Build UI for Sensor Display:
+Design user-friendly interface for real-time sensor data visualization.
+Incorporate responsive design principles for cross-device compatibility.
+Integrate API and Bluetooth:
+Connect frontend to backend APIs for data access.
+Enable real-time updates and notifications from Bluetooth beacons.
+Deliverables: Interactive frontend interface, integrated API, and Bluetooth functionalities.
