@@ -51,3 +51,28 @@ Integrate API and Bluetooth:
 Connect frontend to backend APIs for data access.
 Enable real-time updates and notifications from Bluetooth beacons.
 Deliverables: Interactive frontend interface, integrated API, and Bluetooth functionalities.
+
+Phase 5: Sensor Location Mapping
+Duration: 1-2 weeks
+Objectives:
+
+Implement X, Y, Z Coordinate Visualization:
+Develop a 2D/3D map to display sensor locations.
+Implement interactive features like zoom, pan, and click-to-view details.
+Integrate data from beacons for precise localization.
+Deliverables: Interactive sensor map with real-time data updates.
+
+Phase 6: Testing & Optimization
+Duration: 1-2 weeks
+Objectives:
+
+Debugging:
+Conduct unit, integration, and system testing.
+Identify and resolve bugs or inconsistencies.
+Performance Tuning:
+Optimize database queries, API response times, and frontend rendering.
+Ensure efficient Bluetooth communication.
+User Testing:
+Gather user feedback and conduct usability testing.
+Make iterative improvements based on feedback.
+Deliverables: Test reports, performance metrics, user feedback documentation.
