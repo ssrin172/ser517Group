@@ -22,3 +22,29 @@ Tasks:
   Define interactions between devices, cloud, and sensors.
   Ensure scalability for handling multiple devices and sensors.
 
+4. Tech Stack Selection
+User Story: Select the appropriate tech stack for implementation
+  As a development team, we want to select the best tech stack for our system so that we can ensure reliability, scalability, and ease of development.
+Tasks:
+  Choose suitable programming languages and frameworks.
+  Select cloud platforms and database solutions.
+  Evaluate third-party tools for beacon processing and communication.
+
+5. Application Interface
+User Story: Design the user interface for the application
+  As a user, I want an intuitive interface that displays sensor details so that I can easily understand which sensors are monitoring me.
+Tasks:
+  Design UI/UX for mobile and web applications.
+  Provide a map-based or list-based sensor visibility feature.
+  Ensure accessibility and responsiveness.
+
+6. Cloud Communication
+User Story: Establish secure communication between beacon devices and the cloud
+  As a development team, we want to send location data and beacon ID to the cloud so that the server can process it and provide sensor information.
+Tasks:
+  Develop secure API endpoints for communication.
+  Implement authentication and data validation mechanisms.
+  Ensure data integrity and error handling.
+
+
+
