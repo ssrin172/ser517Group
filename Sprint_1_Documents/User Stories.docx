@@ -46,5 +46,28 @@ Tasks:
   Implement authentication and data validation mechanisms.
   Ensure data integrity and error handling.
 
+7. Cloud Processing & Sensor Data Collection
+User Story: Process location data and retrieve active sensors
+  As a development team, we want to process received location data and match it with registered sensors so that users can see what sensors are monitoring them.
+Tasks:
+  Store and manage beacon IDs and location data in a database.
+  Implement a location-based query to find nearby sensors.
+  Optimize for fast data retrieval and response times.
+
+8. User Notification About Sensors
+User Story: Notify users about sensors monitoring them
+  As a user, I want to receive notifications about sensors tracking me so that I am aware of my surroundings and can make informed decisions.
+Tasks:
+  Implement real-time push notifications or periodic updates.
+  Provide details such as sensor type, owner, and purpose.
+  Allow users to configure notification preferences.
+
+9. Coordinate Calculation on Beacon
+User Story: Calculate location coordinates based on beacon signals
+  As a development team, we want to calculate the user's coordinates using beacon signals so that the location can be determined accurately.
+Tasks:
+  Implement distance estimation using RSSI (signal strength).
+  Develop an algorithm for coordinate calculation using multiple beacons.
+  Handle real-world variations such as signal interference.
 
 
