@@ -70,4 +70,36 @@ Tasks:
   Develop an algorithm for coordinate calculation using multiple beacons.
   Handle real-world variations such as signal interference.
 
+10. Beacon Sends ID and Coordinates
+User Story: Transmit beacon ID and calculated coordinates to the cloud
+  As a development team, we want to send unique beacon ID and calculated coordinates to the cloud so that the system can track the user's location.
+Tasks:
+  Ensure efficient transmission of beacon ID and coordinates.
+  Optimize data packets for minimal latency and power usage.
+  Handle network failures and retry mechanisms.
+
+11. Encryption of Communication
+User Story: Secure all communication between devices and cloud
+  As a security-conscious development team, we want to encrypt all communication between the beacon, device, and cloud so that user data remains private and secure.
+Tasks:
+  Implement end-to-end encryption for transmitted data.
+  Use secure authentication mechanisms (e.g., OAuth, API keys).
+  Ensure compliance with privacy regulations (GDPR, CCPA).
+
+12. Beacon Legitimacy Verification
+User Story: Verify the authenticity of registered beacons
+  As a development team, we want to ensure security and verify the legitimacy of registered beacons so that users can trust the transparency of tracking data.
+Tasks:
+  Implement a verification process for registered beacons.
+  Maintain a whitelist of approved beacon IDs.
+  Prevent unauthorized or rogue beacons from sending data.
+
+13. System Testing & Optimization
+User Story: Test and optimize the system for accuracy and performance
+  As a development team, I want to thoroughly test the system so that we can ensure accuracy, reliability, and efficiency in real-world conditions.
+Tasks:
+  Perform unit and integration testing for all components.
+  Conduct real-world accuracy tests in different environments.
+  Optimize beacon scanning and cloud processing for efficiency
+
 
