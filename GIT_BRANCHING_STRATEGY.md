@@ -48,31 +48,30 @@ This document outlines the folder structure for **Frontend (Flutter)** and **Nod
 
 ## 🎨 Frontend (Flutter) Structure  
 ```
-📂 frontend/  
-├── 📂 lib/  
-│   ├── 📂 core/                # Core utilities (constants, themes, helpers)  
-│   │   ├── 📄 constants.dart  
-│   │   ├── 📄 theme.dart  
-│   │   ├── 📄 logger.dart  
-│   ├── 📂 models/              # Data models (e.g., User, Device)  
-│   │   ├── 📄 user_model.dart  
-│   │   ├── 📄 device_model.dart  
-│   ├── 📂 views/               # UI Screens  
-│   │   ├── 📂 home/  
-│   │   │   ├── 📄 home_screen.dart  
-│   │   │   ├── 📄 home_controller.dart  
-│   │   │   ├── 📄 home_widgets.dart  
-│   │   ├── 📂 settings/  
-│   │   │   ├── 📄 settings_screen.dart  
-│   │   │   ├── 📄 settings_controller.dart  
-│   ├── 📂 controllers/         # Business logic (state management)  
-│   ├── 📂 widgets/             # Reusable UI components  
-│   ├── 📂 routes/              # Navigation management  
-│   ├── 📂 repository/          # API & data handling  
-│   ├── 📂 assets/              # Static assets (images, fonts, icons)  
-│   ├── 📂 test/                # Unit and widget tests  
-├── 📄 pubspec.yaml  
-├── 📄 README.md  
+📂 frontend/
+├── 📂 lib/
+│ ├── 📂 core/                      # ⚙️ Core utilities (constants, themes, helpers)
+│ │ ├── 📄 constants.dart           # 📌 App-wide constants
+│ │ ├── 📄 theme.dart               # 🎨 Theme and styling
+│ │ ├── 📄 logger.dart              # 📝 Logging utility
+│ ├── 📂 models/                    # 📦 Data models (e.g., User, Device)
+│ │ ├── 📄 user_model.dart          # 👤 User model
+│ │ ├── 📄 device_model.dart        # 📡 Beacon device model
+│ ├── 📂 views/                     # 🖥️ UI Screens
+│ │ ├── 📂 home/
+│ │ │ ├── 📄 home_screen.dart       # 🏠 Home screen
+│ │ │ ├── 📄 home_widgets.dart      # 🧩 Reusable widgets for home page
+│ │ ├── 📂 beacon_list/
+│ │ │ ├── 📄 beacon_list_page.dart     # 📡 Beacon list screen
+│ ├── 📂 controllers/               # 🧠 Business logic (state management)
+│ ├── 📂 widgets/                   # 🏗️ Reusable UI components
+│ ├── 📂 routes/                    # 🗺️ Navigation management
+│ ├── 📂 repository/                # 🔌 API & data handling
+│ ├── 📂 assets/                    # 🎨 Static assets (images, fonts, icons)
+│ ├── 📂 test/                      # 🧪 Unit and widget tests
+│ ├── 📄 main.dart                  # 🚀 Entry point for the app
+├── 📄 pubspec.yaml                 # 📜 Flutter dependencies
+├── 📄 README.md                    # 📖 Project documentation 
 ```
 
 ---
