@@ -29,6 +29,120 @@
 
 ---
 
+# 📂 Project Folder Structure
+
+This document outlines the folder structure for **Frontend (Flutter)** and **Node.js backend** within a single repository. This structure ensures modularity, scalability, and maintainability.
+
+## 📌 Root Structure
+```
+📦 beacon_project/
+├── 📂 frontend/        # Flutter application (Client - Frontend)
+├── 📂 backend/         # Node.js server (Backend)
+├── 📂 docs/            # Documentation (API, architecture, etc.)
+├── 📂 deployment/      # Deployment & DevOps configurations
+├── 📄 .gitignore       # Git ignore files
+├── 📄 README.md        # Main project documentation
+```
+
+---
+
+## 🎨 Frontend (Flutter) Structure  
+```
+📂 frontend/  
+├── 📂 lib/  
+│   ├── 📂 core/                # Core utilities (constants, themes, helpers)  
+│   │   ├── 📄 constants.dart  
+│   │   ├── 📄 theme.dart  
+│   │   ├── 📄 logger.dart  
+│   ├── 📂 models/              # Data models (e.g., User, Device)  
+│   │   ├── 📄 user_model.dart  
+│   │   ├── 📄 device_model.dart  
+│   ├── 📂 views/               # UI Screens  
+│   │   ├── 📂 home/  
+│   │   │   ├── 📄 home_screen.dart  
+│   │   │   ├── 📄 home_controller.dart  
+│   │   │   ├── 📄 home_widgets.dart  
+│   │   ├── 📂 settings/  
+│   │   │   ├── 📄 settings_screen.dart  
+│   │   │   ├── 📄 settings_controller.dart  
+│   ├── 📂 controllers/         # Business logic (state management)  
+│   ├── 📂 widgets/             # Reusable UI components  
+│   ├── 📂 routes/              # Navigation management  
+│   ├── 📂 repository/          # API & data handling  
+│   ├── 📂 assets/              # Static assets (images, fonts, icons)  
+│   ├── 📂 test/                # Unit and widget tests  
+├── 📄 pubspec.yaml  
+├── 📄 README.md  
+```
+
+---
+
+## 🔧 Backend (Node.js) Structure  
+```
+📂 backend/  
+├── 📂 src/  
+│   ├── 📄 server.js             # Entry point  
+│   ├── 📂 config/               # Configuration files  
+│   │   ├── 📄 db.js             # Database connection  
+│   │   ├── 📄 env.js            # Environment variables  
+│   ├── 📂 routes/               # API routes  
+│   │   ├── 📄 deviceRoutes.js  
+│   │   ├── 📄 userRoutes.js  
+│   ├── 📂 controllers/          # Request handlers (business logic)  
+│   │   ├── 📄 deviceController.js  
+│   │   ├── 📄 userController.js  
+│   ├── 📂 models/               # Database schemas  
+│   │   ├── 📄 deviceModel.js  
+│   │   ├── 📄 userModel.js  
+│   ├── 📂 services/             # External integrations (authentication, cloud services)  
+│   │   ├── 📄 beaconService.js  
+│   │   ├── 📄 authService.js  
+│   ├── 📂 middlewares/          # Middleware (authentication, error handling)  
+│   │   ├── 📄 authMiddleware.js  
+│   │   ├── 📄 errorHandler.js  
+│   ├── 📂 utils/                # Helper functions  
+│   │   ├── 📄 logger.js  
+│   │   ├── 📄 responseHandler.js  
+├── 📂 tests/                    # Unit tests  
+├── 📄 .env                      # Environment variables  
+├── 📄 package.json              # Node.js dependencies  
+├── 📄 README.md  
+```
+
+---
+
+## 📖 Documentation Folder  
+```
+📂 docs/  
+├── 📄 API_DOCS.md                # API documentation (endpoints, requests, responses)  
+├── 📄 SYSTEM_ARCHITECTURE.md      # System architecture & design decisions  
+├── 📄 SETUP_GUIDE.md              # Guide for setting up the project  
+├── 📄 DEPLOYMENT_GUIDE.md         # Instructions for deployment  
+```
+
+---
+
+## 🚀 Deployment & DevOps  
+```
+📂 deployment/  
+├── 📄 Dockerfile                 # Docker container setup  
+├── 📄 docker-compose.yml         # Docker Compose for multi-container setup  
+├── 📄 nginx.conf                 # Nginx configuration for reverse proxy  
+├── 📂 ci-cd/                     # CI/CD configurations (GitHub Actions, Jenkins, etc.)  
+│   ├── 📄 github-actions.yml  
+│   ├── 📄 jenkinsfile  
+```
+
+---
+
+### ✨ Key Features of This Structure:
+✅ **Modular Design** – Separates concerns between Frontend, Backend, and Deployment.  
+✅ **Scalability** – Easily extendable for future features.  
+✅ **Maintainability** – Well-structured folders for easier code navigation.  
+✅ **Deploy-Ready** – Includes Docker, Nginx, and CI/CD setup for production.
+
+
+---
 ## 🔄 Workflow
 1️⃣ Developers create **feature branches** for backend & frontend separately.
 2️⃣ Completed features merge into **backend-develop** or **frontend-develop**.
@@ -221,4 +335,5 @@ git push origin main
 ```
 
 ✅ **Authentication feature is now live in production!** 🚀
+
 
