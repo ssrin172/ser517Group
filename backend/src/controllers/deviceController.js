@@ -1,0 +1,1 @@
+// Handles device-related requests

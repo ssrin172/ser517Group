@@ -1,1 +1,1 @@
-// This file manages all the database connections
+// Database connection setup
