@@ -1,22 +1,13 @@
-const express = require("express");
-const cors = require("cors");
-const dotenv = require("dotenv");
-
-dotenv.config();
+import express from 'express';
 
 const app = express();
-app.use(cors()); // Enable CORS for Flutter
-app.use(express.json()); // Parse incoming JSON requests
 
-const PORT = process.env.PORT || 8080;
+const PORT = process.env.PORT || 8000;
 
-app.get("/", (req, res) => {
-    res.send("Backend code is Running!");
+app.get('/', (req, res) => {
+    res.send("Welcome to the home page of the application");
 });
 
-// Start Server
 app.listen(PORT, () => {
-    console.log(`Server is running on http://localhost:${PORT}`);
+    console.log(`Listening on port ${PORT}`);
 });
-
-//Entry point of Application

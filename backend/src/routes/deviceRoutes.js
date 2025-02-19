@@ -1,1 +1,0 @@
-// Routes for device-related API endpoints
