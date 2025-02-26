@@ -1,0 +1,43 @@
+# Miscellaneous
+uwbprivacyapp/*.class
+uwbprivacyapp/*.log
+uwbprivacyapp/*.pyc
+uwbprivacyapp/*.swp
+uwbprivacyapp/.DS_Store
+uwbprivacyapp/.atom/
+uwbprivacyapp/.build/
+uwbprivacyapp/.buildlog/
+uwbprivacyapp/.history
+uwbprivacyapp/.svn/
+uwbprivacyapp/.swiftpm/
+uwbprivacyapp/migrate_working_dir/
+
+# IntelliJ related
+uwbprivacyapp/*.iml
+uwbprivacyapp/*.ipr
+uwbprivacyapp/*.iws
+uwbprivacyapp/.idea/
+
+# VS Code
+.vscode/
+
+# Flutter/Dart/Pub related
+uwbprivacyapp/**/doc/api/
+uwbprivacyapp/**/ios/Flutter/.last_build_id
+uwbprivacyapp/.dart_tool/
+uwbprivacyapp/.flutter-plugins
+uwbprivacyapp/.flutter-plugins-dependencies
+uwbprivacyapp/.pub-cache/
+uwbprivacyapp/.pub/
+uwbprivacyapp/build/
+
+# Symbolication related
+uwbprivacyapp/app.*.symbols
+
+# Obfuscation related
+uwbprivacyapp/app.*.map.json
+
+# Android Studio build artifacts
+uwbprivacyapp/android/app/debug
+uwbprivacyapp/android/app/profile
+uwbprivacyapp/android/app/release
