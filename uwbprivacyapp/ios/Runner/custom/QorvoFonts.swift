@@ -1,7 +1,7 @@
 /*
- * @file      AppDelegate.swift
+ * @file      QorvoFonts.swift
  *
- * @brief     A class that responds to application life cycle events.
+ * @brief     Class extension to define custom fonts used along the project
  *
  * @author    Decawave Applications
  *
@@ -50,15 +50,13 @@
  */
 
 import UIKit
-import NearbyInteraction
 
-@UIApplicationMain
-class AppDelegate: UIResponder, UIApplicationDelegate {
+extension UIFont {
+    static let dinNextRegular_s = UIFont(name: "DINNextLTPro-Regular", size: 14)
+    static let dinNextRegular_m = UIFont(name: "DINNextLTPro-Regular", size: 16)
+    static let dinNextRegular_l = UIFont(name: "DINNextLTPro-Regular", size: 22)
 
-    var window: UIWindow?
-
-    func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
-        return true
-    }
+    static let dinNextMedium_s = UIFont(name: "DINNextLTPro-Medium", size: 14)
+    static let dinNextMedium_m = UIFont(name: "DINNextLTPro-Medium", size: 16)
+    static let dinNextMedium_l = UIFont(name: "DINNextLTPro-Medium", size: 22)
 }
-

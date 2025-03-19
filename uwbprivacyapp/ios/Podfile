@@ -1,0 +1,9 @@
+platform :ios, '14.0'
+
+target 'Runner' do
+  use_frameworks!
+
+  target 'RunnerTests' do
+    inherit! :search_paths
+  end
+end

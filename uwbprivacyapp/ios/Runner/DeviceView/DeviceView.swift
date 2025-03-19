@@ -1,7 +1,7 @@
 /*
- * @file      AppDelegate.swift
+ * @file      DeviceView.swift
  *
- * @brief     A class that responds to application life cycle events.
+ * @brief     Implementation of the top text field, where the selected device is shown.
  *
  * @author    Decawave Applications
  *
@@ -49,16 +49,67 @@
  *
  */
 
+import Foundation
 import UIKit
-import NearbyInteraction
 
-@UIApplicationMain
-class AppDelegate: UIResponder, UIApplicationDelegate {
-
-    var window: UIWindow?
-
-    func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
-        return true
+class DeviceView: UIView {
+    // Info fields
+    let titleText: UITextField
+    let deviceName: UITextField
+    // Stack View to organise
+    let verticalStackView: UIStackView
+    
+    init() {
+        // Initializing subviews
+        titleText = UITextField(frame: .zero)
+        titleText.translatesAutoresizingMaskIntoConstraints = false
+        titleText.font = .dinNextRegular_s
+        titleText.contentVerticalAlignment = .bottom
+        titleText.textAlignment = .center
+        titleText.textColor = .qorvoGray50
+        titleText.text = "SelectedAccessory".localized
+        
+        deviceName = UITextField(frame: .zero)
+        deviceName.translatesAutoresizingMaskIntoConstraints = false
+        deviceName.font = .dinNextMedium_m
+        deviceName.contentVerticalAlignment = .center
+        deviceName.textAlignment = .center
+        deviceName.textColor = .black
+        deviceName.text = "NotConnected".localized.uppercased()
+        
+        verticalStackView = UIStackView(arrangedSubviews: [titleText, deviceName])
+        verticalStackView.translatesAutoresizingMaskIntoConstraints = false
+        verticalStackView.axis = .vertical
+        verticalStackView.distribution = .equalSpacing
+        verticalStackView.spacing = 0
+        
+        super.init(frame: .zero)
+        
+        // Add the stack view to the superview
+        addSubview(verticalStackView)
+        
+        // Set up the stack view's constraints
+        NSLayoutConstraint.activate([
+            titleText.centerXAnchor.constraint(equalTo: centerXAnchor),
+            titleText.heightAnchor.constraint(equalToConstant: DEVICE_VIEW_HEIGHT_CONSTRAINT),
+            
+            deviceName.centerXAnchor.constraint(equalTo: centerXAnchor),
+            deviceName.heightAnchor.constraint(equalToConstant: DEVICE_VIEW_HEIGHT_CONSTRAINT),
+            
+            verticalStackView.topAnchor.constraint(equalTo: topAnchor),
+            verticalStackView.leadingAnchor.constraint(equalTo: leadingAnchor),
+            verticalStackView.trailingAnchor.constraint(equalTo: trailingAnchor),
+            verticalStackView.bottomAnchor.constraint(equalTo: bottomAnchor)
+        ])
+        
+        backgroundColor = .white
+    }
+    
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
+    
+    func setDeviceName(_ newDeviceName: String) {
+        deviceName.text = newDeviceName
     }
 }
-

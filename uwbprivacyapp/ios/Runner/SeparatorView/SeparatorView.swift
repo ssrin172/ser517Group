@@ -1,7 +1,8 @@
 /*
- * @file      AppDelegate.swift
+ * @file      SeparatorView.swift
  *
- * @brief     A class that responds to application life cycle events.
+ * @brief     Small View with the device list info. The main Controller shall implement gestures to
+ *            handle the device list and views.
  *
  * @author    Decawave Applications
  *
@@ -49,16 +50,44 @@
  *
  */
 
+import Foundation
 import UIKit
-import NearbyInteraction
 
-@UIApplicationMain
-class AppDelegate: UIResponder, UIApplicationDelegate {
-
-    var window: UIWindow?
-
-    func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
-        return true
+class SeparatorView: UIView {
+    // Info field
+    let titleText: UITextField
+      
+    init(fieldTitle: String) {
+        // Initializing subviews
+        titleText = UITextField(frame: .zero)
+        titleText.translatesAutoresizingMaskIntoConstraints = false
+        titleText.font = .dinNextMedium_s
+        titleText.contentVerticalAlignment = .center
+        titleText.textAlignment = .left
+        titleText.textColor = .black
+        titleText.text = fieldTitle
+        
+        super.init(frame: .zero)
+        
+        // Add the stack view to the subview
+        addSubview(titleText)
+        
+        // Set up the stack view's constraints
+        NSLayoutConstraint.activate([
+            titleText.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 22),
+            titleText.centerYAnchor.constraint(equalTo: centerYAnchor)
+        ])
+        
+        // Set up the parent view's constraints
+        translatesAutoresizingMaskIntoConstraints = false
+        NSLayoutConstraint.activate([
+            heightAnchor.constraint(equalToConstant: SEPARATOR_VIEW_HEIGHT_CONSTRAINT)
+        ])
+        
+        backgroundColor = .qorvoGray05
+    }
+    
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
     }
 }
-

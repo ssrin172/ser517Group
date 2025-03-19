@@ -1,7 +1,7 @@
 /*
- * @file      AppDelegate.swift
+ * @file      QorvoColors.swift
  *
- * @brief     A class that responds to application life cycle events.
+ * @brief     Class extension to define custom colors used along the project
  *
  * @author    Decawave Applications
  *
@@ -50,15 +50,12 @@
  */
 
 import UIKit
-import NearbyInteraction
 
-@UIApplicationMain
-class AppDelegate: UIResponder, UIApplicationDelegate {
-
-    var window: UIWindow?
-
-    func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
-        return true
-    }
+extension UIColor {
+    static let qorvoBlue = UIColor(red: 0.00, green: 159/255, blue: 1.00,    alpha: 1.00)
+    static let qorvoRed  = UIColor(red: 1.00, green: 123/255, blue: 123/255, alpha: 1.00)
+    static let qorvoGray02 = UIColor(red: 249/255, green: 249/255, blue: 249/255, alpha: 1.00)
+    static let qorvoGray05 = UIColor(red: 243/255, green: 243/255, blue: 243/255, alpha: 1.00)
+    static let qorvoGray33 = UIColor(red: 169/255, green: 171/255, blue: 172/255, alpha: 1.00)
+    static let qorvoGray50 = UIColor(red: 127/255, green: 129/255, blue: 133/255, alpha: 1.00)
 }
-

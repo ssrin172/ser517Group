@@ -1,7 +1,7 @@
 /*
- * @file      AppDelegate.swift
+ * @file      WorldView.swift
  *
- * @brief     A class that responds to application life cycle events.
+ * @brief     Simple AR View Class, set to work with NI Sessions (Camera Assistance)
  *
  * @author    Decawave Applications
  *
@@ -49,16 +49,70 @@
  *
  */
 
-import UIKit
-import NearbyInteraction
+import Foundation
+import ARKit
+import RealityKit
 
-@UIApplicationMain
-class AppDelegate: UIResponder, UIApplicationDelegate {
-
-    var window: UIWindow?
-
-    func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
-        return true
+class WorldView: ARView {
+    
+    let arConfig = ARWorldTrackingConfiguration()
+    let anchor = AnchorEntity(world: SIMD3(x: 0, y: 0, z: 0))
+    var entityDict = [Int:ModelEntity]()
+    let pinShape = MeshResource.generateSphere(radius: 0.05)
+    let material = SimpleMaterial(color: .yellow, isMetallic: false)
+    
+    required init(frame: CGRect) {
+        // Set/start AR Session to provide camera assistance to new NI Sessions
+        arConfig.worldAlignment = .gravity
+        arConfig.isCollaborationEnabled = false
+        arConfig.userFaceTrackingEnabled = false
+        arConfig.initialWorldMap = nil
+        
+        super.init(frame: .zero)
+        
+        // Set/start the AR Session. This AR Session will be shared with NISessions
+        session = ARSession()
+        session.delegate = self
+        session.run(arConfig)
+        scene.addAnchor(anchor)
+        
+        isHidden = true
+        contentMode = .scaleToFill
+        
+        // Set up the parent view's constraints
+        translatesAutoresizingMaskIntoConstraints = false
+        NSLayoutConstraint.activate([
+            heightAnchor.constraint(greaterThanOrEqualToConstant: WORLD_VIEW_HEIGHT_CONSTRAINT)
+        ])
     }
+    
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
+    
+    func insertEntity(_ deviceID: Int) {
+        // Create a new entity include ie to the anchor
+        entityDict[deviceID] = ModelEntity(mesh: pinShape, materials: [material])
+        entityDict[deviceID]!.position = [0, 0, 100]
+        anchor.addChild(entityDict[deviceID]!)
+    }
+    
+    func removeEntity(_ deviceID: Int) {
+        // Remove entity and delete etityDict entry
+        anchor.removeChild(entityDict[deviceID]!)
+        entityDict.removeValue(forKey: deviceID)
+    }
+    
+    func updateEntityPosition(_ deviceID: Int,_ transform: simd_float4x4) {
+        entityDict[deviceID]!.transform.matrix = transform
+    }
+    
 }
 
+// MARK: - `ARSessionDelegate`.
+
+extension WorldView: ARSessionDelegate {
+    func sessionShouldAttemptRelocalization(_ session: ARSession) -> Bool {
+        return false
+    }
+}

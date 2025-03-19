@@ -1,7 +1,7 @@
 /*
- * @file      AppDelegate.swift
+ * @file      DesignConstraints.swift
  *
- * @brief     A class that responds to application life cycle events.
+ * @brief     Constants GUI constraints declared from the Figma design.
  *
  * @author    Decawave Applications
  *
@@ -49,16 +49,32 @@
  *
  */
 
-import UIKit
-import NearbyInteraction
+// Constraints extracted from the app design
+let ACCESSORY_TABLE_HEIGHT_CONSTRAINT = 261.0
+let ACCESSORY_TABLE_ROW_HEIGHT_CONSTRAINT = 87.0
 
-@UIApplicationMain
-class AppDelegate: UIResponder, UIApplicationDelegate {
+let DEVICE_VIEW_HEIGHT_CONSTRAINT = 52.0
 
-    var window: UIWindow?
+let ACTION_BUTTON_WIDTH_CONSTRAINT = 160.0
+let CONNECTING_SIDE_CONSTRAINT = 24.0
+let BOTTOM_BAR_HEIGHT_CONSTRAINT = 1.0
+let BOTTOM_BAR_WIDTH_CONSTRAINT = 370.0
+let PIPE_SIDE_CONSTRAINT = 18.0
+let MINI_ARROW_SIDE_CONSTRAINT = 18.0
+let MINI_LOCATION_WIDTH_CONSTRAINT = 160.0
+let DISTANCE_LABEL_WIDTH_CONSTRAINT = 52.0
+let AZIMUTH_LABEL_WIDTH_CONSTRAINT = 52.0
 
-    func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
-        return true
-    }
-}
+let ARROW_VIEW_HEIGHT_CONSTRAINT = 228.0
+let ARROW_IMAGE_HEIGHT_CONSTRAINT = 164.0
+let ARROW_IMAGE_WIDTH_CONSTRAINT = 202.0
+let SCANNING_SIDE_CONSTRAINT = 44.0
 
+let FIELD_ICON_SIDE_CONSTRAINT = 22.0
+let VALUE_TEXT_HEIGHT_CONSTRAINT = 26.0
+let TITLE_TEXT_HEIGHT_CONSTRAINT = 14.0
+let LOCATION_FIELD_HEIGHT_CONSTRAINT = 100.0
+
+let SEPARATOR_VIEW_HEIGHT_CONSTRAINT = 52.0
+
+let WORLD_VIEW_HEIGHT_CONSTRAINT = 300.0
