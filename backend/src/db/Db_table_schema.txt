@@ -1,0 +1,22 @@
+-- Create the database
+CREATE DATABASE uwb_privacy_app;
+
+-- Use the newly created database
+USE uwb_privacy_app;
+
+-- Create the uwb_sensors_location table
+CREATE TABLE uwb_sensors_location (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    sensor_id VARCHAR(50) NOT NULL,
+    x_cord FLOAT NOT NULL,
+    y_cord FLOAT NOT NULL,
+    angle FLOAT NOT NULL
+);
+
+-- Create the beacon_location table
+CREATE TABLE beacon_location (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    beacon_id VARCHAR(50) NOT NULL,
+    x_cord FLOAT NOT NULL,
+    y_cord FLOAT NOT NULL
+);
