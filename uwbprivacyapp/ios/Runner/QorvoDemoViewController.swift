@@ -88,6 +88,17 @@ class QorvoDemoViewController: UIViewController, ArrowProtocol, TableProtocol {
    
     @IBOutlet weak var mainStackView: UIStackView!
     @IBOutlet weak var arButton: UIButton!
+
+    // ------------------------------- CUSTOM ------------------------------
+    var deviceDistances: [Int: Float] = [:]
+
+    // Beacon positions (fixed in space for the two devices)
+    let beaconPositions: [Int: (Float, Float)] = [
+        112456485: (0.0, 0.0),  // Device ID 112456485 at (0, 0)
+        143285168: (2.5, 0.0)  // Device ID 143285168 at (10, 0)
+    ]
+
+    // ------------------------------- CUSTOM ------------------------------
     
     // All info Views
     let worldView = WorldView(frame: .zero)
@@ -557,7 +568,7 @@ class QorvoDemoViewController: UIViewController, ArrowProtocol, TableProtocol {
     }
 }
 
-// MARK: - `NISessionDelegate`.
+// MARK: - NISessionDelegate.
 extension QorvoDemoViewController: NISessionDelegate {
 
     func session(_ session: NISession, didGenerateShareableConfigurationData shareableConfigurationData: Data, for object: NINearbyObject) {
@@ -593,13 +604,72 @@ extension QorvoDemoViewController: NISessionDelegate {
             arrowView.infoLabelUpdate(with: "MovementNeeded".localized)
         }
     }
+
+    // ------------------------------- CUSTOM ------------------------------
+    func calculateUserCoordinates() {
+        // Ensure there are exactly two distances
+        guard deviceDistances.count == 2 else {
+            print("Not enough data to calculate coordinates. Need distances from two beacons.")
+            return
+        }
+        
+        // Extract the distances and beacon positions
+        let deviceIDs = Array(deviceDistances.keys)
+        
+        guard let distance1 = deviceDistances[deviceIDs[0]],
+            let distance2 = deviceDistances[deviceIDs[1]] else {
+            print("Error: Missing distance data.")
+            return
+        }
+        
+        // Ensure that beacon positions exist for both device IDs
+        guard let beacon1 = beaconPositions[deviceIDs[0]], 
+            let beacon2 = beaconPositions[deviceIDs[1]] else {
+            print("Error: Missing beacon positions.")
+            return
+        }
+        
+        // Extract beacon positions
+        let (x1, y1) = beacon1
+        let (x2, y2) = beacon2
+        
+        // Calculate the user's coordinates using the normal distance formula
+        let A = 2 * (x2 - x1)
+        let B = 2 * (y2 - y1)
+        
+        // C is calculated based on the square of the distances
+        let C = (distance1 * distance1) - (distance2 * distance2) - (x1 * x1) + (x2 * x2) - (y1 * y1) + (y2 * y2)
+        
+        // Calculate x coordinate
+        let x = C / A
+        
+        // Calculate y coordinate using the distance formula
+        let yTerm = (distance1 * distance1) - (x - x1) * (x - x1)
+        
+        // Ignore the invalid geometry (negative value under square root)
+        let y = max(0, yTerm).squareRoot()  // Use max(0, yTerm) to avoid negative numbers inside square root
+        
+        // Print the calculated coordinates
+        print("Calculated User Coordinates: (\(x), \(y))")
+    }
+
+    // ------------------------------- CUSTOM ------------------------------ 
     
     func session(_ session: NISession, didUpdate nearbyObjects: [NINearbyObject]) {
         guard let accessory = nearbyObjects.first else { return }
         guard let distance  = accessory.distance else { return }
+        // print("Total Distance: \(distance) meters")
         
         let deviceID = deviceIDFromSession(session)
         //logger.info(NISession.deviceCapabilities)
+
+        deviceDistances[deviceID] = distance
+
+        print("Updated deviceDistances: \(deviceDistances)")
+
+        if deviceDistances.count == 2 {
+            calculateUserCoordinates()  // Ensure both devices are present before calculating
+        }
     
         if let updatedDevice = dataChannel.getDeviceFromUniqueID(deviceID) {
             // set updated values
@@ -632,6 +702,7 @@ extension QorvoDemoViewController: NISessionDelegate {
         updateLocationFields(deviceID)
         updateMiniFields(deviceID)
     }
+
     
     func session(_ session: NISession, didRemove nearbyObjects: [NINearbyObject], reason: NINearbyObject.RemovalReason) {
         // Retry the session only if the peer timed out.
