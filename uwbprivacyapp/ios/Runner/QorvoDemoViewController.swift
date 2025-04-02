@@ -604,6 +604,7 @@ extension QorvoDemoViewController: NISessionDelegate {
             arrowView.infoLabelUpdate(with: "MovementNeeded".localized)
         }
     }
+    
 
     // ------------------------------- CUSTOM ------------------------------
     func calculateUserCoordinates() {
@@ -655,39 +656,90 @@ extension QorvoDemoViewController: NISessionDelegate {
 
     // ------------------------------- CUSTOM ------------------------------ 
     
+//    func session(_ session: NISession, didUpdate nearbyObjects: [NINearbyObject]) {
+//        guard let accessory = nearbyObjects.first else { return }
+//        guard let distance  = accessory.distance else { return }
+//        // print("Total Distance: \(distance) meters")
+//        
+//        let deviceID = deviceIDFromSession(session)
+//        //logger.info(NISession.deviceCapabilities)
+//
+//        deviceDistances[deviceID] = distance
+//
+//        print("Updated deviceDistances: \(deviceDistances)")
+//
+//        if deviceDistances.count == 2 {
+//            calculateUserCoordinates()  // Ensure both devices are present before calculating
+//        }
+//    
+//        if let updatedDevice = dataChannel.getDeviceFromUniqueID(deviceID) {
+//            // set updated values
+//            updatedDevice.uwbLocation?.distance = distance
+//    
+//            if let direction = accessory.direction {
+//                updatedDevice.uwbLocation?.direction = direction
+//                updatedDevice.uwbLocation?.noUpdate  = false
+//                
+//                // Update AR anchor
+//                if !worldView.isHidden {
+//                    guard let transform = session.worldTransform(for: accessory) else {return}
+//                    worldView.updateEntityPosition(deviceID, transform)
+//                }
+//            }
+//            //TODO: For IPhone 14 only
+//            else if isConverged {
+//                guard let horizontalAngle = accessory.horizontalAngle else {return}
+//                updatedDevice.uwbLocation?.direction = getDirectionFromHorizontalAngle(rad: horizontalAngle)
+//                updatedDevice.uwbLocation?.elevation = accessory.verticalDirectionEstimate.rawValue
+//                updatedDevice.uwbLocation?.noUpdate  = false
+//            }
+//            else {
+//                updatedDevice.uwbLocation?.noUpdate  = true
+//            }
+//    
+//            updatedDevice.blePeripheralStatus = statusRanging
+//        }
+//        
+//        updateLocationFields(deviceID)
+//        updateMiniFields(deviceID)
+//    }
+
+    
+    // ----------------------- CUSTOM CHANGES 2 ----------------------
+    
     func session(_ session: NISession, didUpdate nearbyObjects: [NINearbyObject]) {
         guard let accessory = nearbyObjects.first else { return }
         guard let distance  = accessory.distance else { return }
-        // print("Total Distance: \(distance) meters")
         
         let deviceID = deviceIDFromSession(session)
-        //logger.info(NISession.deviceCapabilities)
-
+        
+        // Update the device's distance
         deviceDistances[deviceID] = distance
-
+        
         print("Updated deviceDistances: \(deviceDistances)")
 
+        // When both beacons are detected, automatically connect to them
         if deviceDistances.count == 2 {
-            calculateUserCoordinates()  // Ensure both devices are present before calculating
+            // If we have two devices, trigger automatic connection
+            connectToBothBeacons()
         }
-    
+
+        // Additional logic for handling the accessory data and updating device location
         if let updatedDevice = dataChannel.getDeviceFromUniqueID(deviceID) {
-            // set updated values
             updatedDevice.uwbLocation?.distance = distance
-    
+
             if let direction = accessory.direction {
                 updatedDevice.uwbLocation?.direction = direction
                 updatedDevice.uwbLocation?.noUpdate  = false
                 
-                // Update AR anchor
+                // Update AR anchor if needed
                 if !worldView.isHidden {
-                    guard let transform = session.worldTransform(for: accessory) else {return}
+                    guard let transform = session.worldTransform(for: accessory) else { return }
                     worldView.updateEntityPosition(deviceID, transform)
                 }
             }
-            //TODO: For IPhone 14 only
             else if isConverged {
-                guard let horizontalAngle = accessory.horizontalAngle else {return}
+                guard let horizontalAngle = accessory.horizontalAngle else { return }
                 updatedDevice.uwbLocation?.direction = getDirectionFromHorizontalAngle(rad: horizontalAngle)
                 updatedDevice.uwbLocation?.elevation = accessory.verticalDirectionEstimate.rawValue
                 updatedDevice.uwbLocation?.noUpdate  = false
@@ -695,14 +747,28 @@ extension QorvoDemoViewController: NISessionDelegate {
             else {
                 updatedDevice.uwbLocation?.noUpdate  = true
             }
-    
+
             updatedDevice.blePeripheralStatus = statusRanging
         }
-        
+
         updateLocationFields(deviceID)
         updateMiniFields(deviceID)
     }
-
+    
+    
+    func connectToBothBeacons() {
+        // Check if deviceDistances has 2 devices
+        if deviceDistances.count == 2 {
+            // Loop through the dictionary to connect to both devices
+            for (deviceID, _) in deviceDistances {
+                connectToAccessory(deviceID)
+            }
+        }
+    }
+    
+        
+    
+    // ----------------------- CUSTOM CHANGES 2 ----------------------
     
     func session(_ session: NISession, didRemove nearbyObjects: [NINearbyObject], reason: NINearbyObject.RemovalReason) {
         // Retry the session only if the peer timed out.
