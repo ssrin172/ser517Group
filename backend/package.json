@@ -17,8 +17,10 @@
   "author": "Sumeet Suryawanshi, Rohan Mathur, Harika Arimilli, Sadhanand Srinivasan",
   "license": "ISC",
   "dependencies": {
+    "cors": "^2.8.5",
     "dotenv": "^16.4.7",
-    "express": "^4.21.2"
+    "express": "^4.21.2",
+    "mongoose": "^8.13.1"
   },
   "devDependencies": {
     "nodemon": "^3.1.9",
