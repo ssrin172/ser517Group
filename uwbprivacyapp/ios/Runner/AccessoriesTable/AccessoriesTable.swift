@@ -121,19 +121,32 @@ class AccessoriesTable: UITableView, UITableViewDelegate, UITableViewDataSource 
         self.endUpdates()
     }
     
-    func updateCell(_ deviceID: Int,_ distance: Float,_ azimuth: Int) {
+    func updateCell(_ deviceID: Int, _ distance: Float, _ azimuth: Int, isDanger: Bool = false) {
         for case let cell as SingleCell in self.visibleCells {
             if cell.uniqueID == deviceID {
                 cell.distanceLabel.text = String(format: "meters".localized, distance)
                 cell.azimuthLabel.text  = String(format: "degrees".localized, azimuth)
-                
-                // Update mini arrow
+
+                // Update mini arrow direction
                 let radians: CGFloat = CGFloat(azimuth) * (.pi / 180)
                 cell.miniArrow.transform = CGAffineTransform(rotationAngle: radians)
+
+                // 🔴🔵 Mitigation: Color logic
+                if isDanger {
+                    cell.backgroundColor = UIColor.systemRed.withAlphaComponent(0.15)
+                    cell.accessoryButton.tintColor = .systemRed
+                    cell.actionButton.tintColor = .systemRed
+                    print("🚨 Device \(deviceID) is TOO CLOSE (< 0.5m). Marking as DANGER.")
+                } else {
+                    cell.backgroundColor = UIColor.systemGreen.withAlphaComponent(0.15)
+                    cell.accessoryButton.tintColor = .systemGreen
+                    cell.actionButton.tintColor = .systemGreen
+                    print("✅ Device \(deviceID) is at safe distance. Marking as SAFE.")
+                }
             }
         }
     }
-    
+
     // MARK: - UITableViewDataSource
     
     func numberOfSections(in tableView: UITableView) -> Int {
