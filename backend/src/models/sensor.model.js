@@ -1,31 +1,31 @@
 import mongoose from "mongoose";
 
 const SensorSchema = new mongoose.Schema({
-    sensor_id: { type: String, required: true, unique: true },
-    sensor_name: { type: String, required: true },
+    sensorId: { type: String, required: true, unique: true },
+    sensorName: { type: String, required: true },
     coordinates: {
         x: { type: Number, required: true },
         y: { type: Number, required: true }
     },
-    sensor_tracking_range: { type: Number, required: true },
-    device_angle: {
+    sensorTrackingRange: { type: Number, required: true },
+    deviceAngle: {
         type: Number,
         default: 360, // Default to 360 degrees for non-camera sensors
         min: 0,
         max: 360
     },
     description: { type: String },
-    mitigation_details: { type: String },
-    purpose: { type: String }
+    mitigationDetails: { type: String },
+    purpose: { type: String },
+    beaconGroupId: { type: String, required: true } // Linked to BeaconGroup
 });
 
-// Middleware to enforce device_angle for camera sensors
+// Middleware to enforce deviceAngle for camera sensors
 SensorSchema.pre("save", function(next) {
-    if (this.sensor_name.toLowerCase().includes("camera") && (this.device_angle === undefined || this.device_angle === 360)) {
-        return next(new Error("Camera sensors must have a valid device_angle between 0 and 360 degrees."));
+    if (this.sensorName.toLowerCase().includes("camera") && (this.deviceAngle === undefined || this.deviceAngle === 360)) {
+        return next(new Error("Camera sensors must have a valid deviceAngle between 0 and 360 degrees."));
     }
     next();
 });
 
-const Sensor = mongoose.model("Sensor", SensorSchema);
-export default Sensor;
+export const Sensor = mongoose.model("Sensor", SensorSchema);
