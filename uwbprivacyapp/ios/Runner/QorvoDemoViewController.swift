@@ -509,8 +509,8 @@ class QorvoDemoViewController: UIViewController, ArrowProtocol, TableProtocol {
         else {
             azimuth = Int(rad2deg(Double(azimuthCheck)))
         }
-
         // Update the "accessoriesTable" cell with the given values
+        let isDanger = Float(distance) < 0.5
         accessoriesTable.updateCell(deviceID, distance!, azimuth)
     }
     
