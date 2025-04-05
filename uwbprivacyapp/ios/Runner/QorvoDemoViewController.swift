@@ -232,13 +232,21 @@ class QorvoDemoViewController: UIViewController, ArrowProtocol, TableProtocol {
     }
     
     @IBAction func buttonSelect(_ sender: UIButton) {
-        if dataChannel.getDeviceFromUniqueID(sender.tag) != nil {
-            let deviceID = sender.tag
+        guard let qorvoDevice = dataChannel.getDeviceFromUniqueID(sender.tag) else { return }
 
-            selectDevice(deviceID)
-            logger.info("Select Button pressed for device \(deviceID)")
+        let storyboard = UIStoryboard(name: "Main", bundle: nil)
+        if let detailVC = storyboard.instantiateViewController(withIdentifier: "BeaconDetailViewController") as? BeaconDetailViewController {
+            detailVC.deviceID = qorvoDevice.bleUniqueID
+            detailVC.deviceName = qorvoDevice.blePeripheralName
+            navigationItem.backButtonTitle = "Back"
+            navigationController?.pushViewController(detailVC, animated: true)
         }
     }
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+        navigationController?.setNavigationBarHidden(true, animated: false)
+    }
+
     
     @IBAction func buttonAction(_ sender: UIButton) {
         let deviceID = sender.tag
@@ -489,30 +497,25 @@ class QorvoDemoViewController: UIViewController, ArrowProtocol, TableProtocol {
     }
     
     func updateMiniFields(_ deviceID: Int) {
-        
-        let qorvoDevice = dataChannel.getDeviceFromUniqueID(deviceID)
-        if qorvoDevice == nil { return }
-        
-        // Get updated location values
-        let distance  = qorvoDevice?.uwbLocation?.distance
-        let azimuthCheck = azimuth((qorvoDevice?.uwbLocation?.direction)!)
-        
-        // Check if azimuth check calcul is a number (ie: not infinite)
-        if azimuthCheck.isNaN {
-            return
-        }
-        
+        guard let qorvoDevice = dataChannel.getDeviceFromUniqueID(deviceID),
+              let distance = qorvoDevice.uwbLocation?.distance,
+              let direction = qorvoDevice.uwbLocation?.direction else { return }
+
+        let azimuthCheck = azimuth(direction)
+        if azimuthCheck.isNaN { return }
+
         var azimuth = 0
         if Settings().isDirectionEnable {
-            azimuth =  Int( 90 * (Double(azimuthCheck)))
-        }
-        else {
+            azimuth = Int(90 * Double(azimuthCheck))
+        } else {
             azimuth = Int(rad2deg(Double(azimuthCheck)))
         }
-        // Update the "accessoriesTable" cell with the given values
-        let isDanger = Float(distance) < 0.5
-        accessoriesTable.updateCell(deviceID, distance!, azimuth)
+
+        let isDanger = distance < 0.5 // ✅ distance is already unwrapped
+        accessoriesTable.updateCell(deviceID, distance, azimuth, isDanger: distance < 0.5)
     }
+
+ 
     
     func updateLocationFields(_ deviceID: Int) {
         if selectedAccessory == deviceID {
