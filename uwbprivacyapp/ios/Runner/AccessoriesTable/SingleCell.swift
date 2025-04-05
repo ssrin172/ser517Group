@@ -64,7 +64,6 @@ class SingleCell: UITableViewCell {
     let actionButton: UIButton
     let connecting: UIImageView
     let bottomBar: UIImageView
-    let detailsButton: UIButton
 
     let azimuthLabel: UITextField
     let miniArrow: UIImageView
@@ -120,12 +119,7 @@ class SingleCell: UITableViewCell {
         actionButton.contentHorizontalAlignment = .right
         actionButton.titleEdgeInsets = UIEdgeInsets(top: 0, left: 0, bottom: 0, right: 20)
         actionButton.translatesAutoresizingMaskIntoConstraints = false
-        detailsButton = UIButton(type: .system)
-                detailsButton.setTitle("Details", for: .normal)
-                detailsButton.setTitleColor(.systemBlue, for: .normal)
-                detailsButton.titleLabel?.font = UIFont.systemFont(ofSize: 14, weight: .medium)
-                 detailsButton.isHidden = false
-                detailsButton.translatesAutoresizingMaskIntoConstraints = false
+
         connecting = UIImageView()
         connecting.contentMode = .scaleAspectFit
         connecting.translatesAutoresizingMaskIntoConstraints = false
@@ -141,12 +135,11 @@ class SingleCell: UITableViewCell {
         miniLocation.addSubview(azimuthLabel)
 
         super.init(style: style, reuseIdentifier: reuseIdentifier)
-
+        self.selectionStyle = .none 
         contentView.addSubview(backgroundContainer)
         backgroundContainer.addSubview(accessoryButton)
         backgroundContainer.addSubview(miniLocation)
         backgroundContainer.addSubview(actionButton)
-        backgroundContainer.addSubview(detailsButton)
         backgroundContainer.addSubview(connecting)
         backgroundContainer.addSubview(bottomBar)
 
@@ -175,12 +168,7 @@ class SingleCell: UITableViewCell {
             actionButton.centerYAnchor.constraint(equalTo: backgroundContainer.centerYAnchor),
             actionButton.trailingAnchor.constraint(equalTo: backgroundContainer.trailingAnchor, constant: -20),
             actionButton.widthAnchor.constraint(equalToConstant: ACTION_BUTTON_WIDTH_CONSTRAINT),
-            
-            detailsButton.trailingAnchor.constraint(equalTo: backgroundContainer.trailingAnchor, constant: -20),
-                        detailsButton.bottomAnchor.constraint(equalTo: backgroundContainer.bottomAnchor, constant: -8),
-                        detailsButton.heightAnchor.constraint(equalToConstant: 28),
-                        detailsButton.widthAnchor.constraint(equalToConstant: 100),
-            
+
             connecting.centerYAnchor.constraint(equalTo: backgroundContainer.centerYAnchor),
             connecting.trailingAnchor.constraint(equalTo: backgroundContainer.trailingAnchor, constant: -20),
             connecting.widthAnchor.constraint(equalToConstant: CONNECTING_SIDE_CONSTRAINT),
@@ -225,8 +213,12 @@ class SingleCell: UITableViewCell {
 
     override func prepareForReuse() {
         super.prepareForReuse()
+        backgroundColor = .clear
         backgroundContainer.backgroundColor = .white
         accessoryButton.setTitleColor(.black, for: .normal)
+        accessoryButton.backgroundColor = .clear
+        actionButton.tintColor = .qorvoBlue
+        selectAsset(.actionButton)
     }
 
     func selectAsset(_ asset: asset) {
@@ -235,19 +227,16 @@ class SingleCell: UITableViewCell {
             miniLocation.isHidden = true
             actionButton.isHidden = false
             connecting.isHidden   = true
-            detailsButton.isHidden = true
             connecting.stopAnimating()
         case .connecting:
             miniLocation.isHidden = true
             actionButton.isHidden = true
             connecting.isHidden   = false
-            detailsButton.isHidden = true
             connecting.startAnimating()
         case .miniLocation:
             miniLocation.isHidden = false
             actionButton.isHidden = true
             connecting.isHidden   = true
-            detailsButton.isHidden = false
             connecting.stopAnimating()
         }
     }
