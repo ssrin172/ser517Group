@@ -597,44 +597,65 @@ extension QorvoDemoViewController: NISessionDelegate {
     }
     
     func session(_ session: NISession, didUpdate nearbyObjects: [NINearbyObject]) {
-        guard let accessory = nearbyObjects.first else { return }
-        guard let distance  = accessory.distance else { return }
-        
+        guard let accessory = nearbyObjects.first,
+              let distance  = accessory.distance else { return }
+
         let deviceID = deviceIDFromSession(session)
-        //logger.info(NISession.deviceCapabilities)
-    
+
         if let updatedDevice = dataChannel.getDeviceFromUniqueID(deviceID) {
-            // set updated values
             updatedDevice.uwbLocation?.distance = distance
-    
+
+            var azimuthAngle: Int = 0
+            var elevationAngle: Int = 0
+
             if let direction = accessory.direction {
                 updatedDevice.uwbLocation?.direction = direction
                 updatedDevice.uwbLocation?.noUpdate  = false
-                
+
+                // Azimuth calculation
+                let azimuthCheck = azimuth(direction)
+                azimuthAngle = Settings().isDirectionEnable
+                    ? Int(90 * Double(azimuthCheck))
+                    : Int(rad2deg(Double(azimuthCheck)))
+
+                // Elevation calculation
+                elevationAngle = Settings().isDirectionEnable
+                    ? Int(90 * elevation(direction))
+                    : updatedDevice.uwbLocation?.elevation ?? 0
+
                 // Update AR anchor
                 if !worldView.isHidden {
-                    guard let transform = session.worldTransform(for: accessory) else {return}
+                    guard let transform = session.worldTransform(for: accessory) else { return }
                     worldView.updateEntityPosition(deviceID, transform)
                 }
             }
-            //TODO: For IPhone 14 only
             else if isConverged {
-                guard let horizontalAngle = accessory.horizontalAngle else {return}
+                guard let horizontalAngle = accessory.horizontalAngle else { return }
                 updatedDevice.uwbLocation?.direction = getDirectionFromHorizontalAngle(rad: horizontalAngle)
                 updatedDevice.uwbLocation?.elevation = accessory.verticalDirectionEstimate.rawValue
-                updatedDevice.uwbLocation?.noUpdate  = false
+                updatedDevice.uwbLocation?.noUpdate = false
+
+                azimuthAngle = Int(rad2deg(Double(horizontalAngle)))
+                elevationAngle = accessory.verticalDirectionEstimate.rawValue
+            } else {
+                updatedDevice.uwbLocation?.noUpdate = true
             }
-            else {
-                updatedDevice.uwbLocation?.noUpdate  = true
-            }
-    
+
             updatedDevice.blePeripheralStatus = statusRanging
+
+            // Send live updates to detail page if visible
+            if let detailVC = navigationController?.topViewController as? BeaconDetailViewController,
+               selectedAccessory == deviceID {
+                detailVC.distance = distance
+                detailVC.azimuth = azimuthAngle
+                detailVC.elevation = elevationAngle
+            }
         }
-        
+
         updateLocationFields(deviceID)
         updateMiniFields(deviceID)
     }
-    
+
     func session(_ session: NISession, didRemove nearbyObjects: [NINearbyObject], reason: NINearbyObject.RemovalReason) {
         // Retry the session only if the peer timed out.
         guard reason == .timeout else { return }
