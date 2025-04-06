@@ -54,5 +54,7 @@
 	</array>
 	<key>com.apple.developer.nearby-interaction</key>
 	<true/>
+    <key>NSBluetoothAlwaysUsageDescription</key>
+    <string>This app uses Bluetooth to detect nearby UWB beacons for live location tracking and sensor awareness.</string>
 </dict>
 </plist>
