@@ -1,90 +1,77 @@
+// src/controllers/beacon.controller.js
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
-import { BeaconGroup } from "../models/beaconGroup.model.js";
 import { Sensor } from "../models/sensor.model.js";
 
-// Create or Update a Beacon with linked sensors and coordinates
-const createOrUpdateBeacon = asyncHandler(async(req, res) => {
-    const { beaconGroupId, coordinates } = req.body;
-
-    // Check if the beacon group already exists
-    let beacon = await BeaconGroup.findOne({ beaconGroupId });
-
-    if (!beacon) {
-        // If beacon doesn't exist, create a new one
-        beacon = new BeaconGroup({
-            beaconGroupId,
-            beaconIds: [],
-            coordinates,
-            sensors: [],
-        });
-    } else {
-        // If beacon exists, update coordinates
-        beacon.coordinates = coordinates;
-    }
-
-    // Save the beacon to the database
-    await beacon.save();
-
-    return res.status(200).json(
-        new ApiResponse(200, beacon, "Beacon data saved/updated successfully")
-    );
-});
-
-// Fetch sensors linked to the given beacon group ID
-const getSensorsForBeaconGroup = asyncHandler(async(req, res) => {
-    const { beaconGroupId } = req.params;
-
-    // Find the beacon with the given group ID
-    const beacon = await BeaconGroup.findOne({ beaconGroupId }).populate("sensors");
-
-    if (!beacon) {
-        throw new ApiError(404, "Beacon group not found");
-    }
-
-    // Send back the linked sensors data
-    return res.status(200).json(
-        new ApiResponse(200, beacon.sensors, "Sensors fetched successfully")
-    );
-});
-
-// Group two beacons and fetch linked sensors
-const groupBeaconsAndGetSensors = asyncHandler(async(req, res) => {
-    const { beaconId1, beaconId2, coordinates } = req.body;
-
-    // Generate a unique Beacon Group ID
-    const beaconGroupId = `${beaconId1}-${beaconId2}`;
-
-    // Check if the beacon group already exists
-    let beacon = await BeaconGroup.findOne({ beaconGroupId });
-
-    if (!beacon) {
-        // If beacon doesn't exist, create a new one
-        beacon = new BeaconGroup({
-            beaconGroupId,
-            beaconIds: [beaconId1, beaconId2],
-            coordinates,
-            sensors: [],
-        });
-    } else {
-        // If beacon exists, update coordinates
-        beacon.coordinates = coordinates;
-    }
-
-    // Save or update the beacon in the database
-    await beacon.save();
-
-    // Fetch the linked sensors for the new or updated beacon group
-    const sensors = await Sensor.find({ beaconGroupId });
-
-    return res.status(200).json(
-        new ApiResponse(200, { beacon, sensors }, "Beacon group and sensors updated")
-    );
-});
-
-export {
-    createOrUpdateBeacon,
-    getSensorsForBeaconGroup,
-    groupBeaconsAndGetSensors,
+/**
+ * Helper function to normalize a beaconGroupId.
+ * This ensures the two beacon IDs are always sorted in a consistent order.
+ */
+const normalizeBeaconGroupId = (beaconGroupId) => {
+    return beaconGroupId.split('-').sort().join('-');
 };
+
+/**
+ * Create or update sensors for a given beacon group.
+ * The request body must contain:
+ * {
+ *   "beaconGroupId": "3B807668-57944B02", // or any order, it will be normalized
+ *   "sensors": [
+ *     {
+ *       "sensorId": "sensor001",
+ *       "sensorName": "Ceiling Camera",
+ *       "coordinates": { "x": 10, "y": 20 },
+ *       "sensorType": "Camera",
+ *       "sensorTrackingRange": 30,
+ *       "deviceAngle": 120,
+ *       "description": "...",
+ *       "mitigationDetails": "...",
+ *       "purpose": "...",
+ *       "dataCaptures": "Video/Image"
+ *     },
+ *     { ... }
+ *   ]
+ * }
+ */
+const createOrUpdateSensors = asyncHandler(async(req, res) => {
+    let { beaconGroupId, sensors } = req.body;
+    if (!beaconGroupId || !sensors || !Array.isArray(sensors)) {
+        throw new ApiError(400, "beaconGroupId and a sensors array are required");
+    }
+
+    // Normalize the beaconGroupId to ensure consistency
+    beaconGroupId = normalizeBeaconGroupId(beaconGroupId);
+
+    // For each sensor, set the normalized beaconGroupId and perform an upsert operation
+    const sensorPromises = sensors.map(sensorData => {
+        sensorData.beaconGroupId = beaconGroupId;
+        return Sensor.findOneAndUpdate({ sensorId: sensorData.sensorId },
+            sensorData, { new: true, upsert: true }
+        );
+    });
+
+    const updatedSensors = await Promise.all(sensorPromises);
+
+    return res.status(200).json(
+        new ApiResponse(200, updatedSensors, "Sensors created/updated successfully")
+    );
+});
+
+/**
+ * Get sensors for a given beacon group.
+ * The beaconGroupId is provided as a URL parameter.
+ */
+const getSensorsForBeaconGroup = asyncHandler(async(req, res) => {
+    // Normalize the beaconGroupId from the URL parameter
+    const normalizedBeaconGroupId = normalizeBeaconGroupId(req.params.beaconGroupId);
+    const sensors = await Sensor.find({ beaconGroupId: normalizedBeaconGroupId });
+    if (!sensors || sensors.length === 0) {
+        throw new ApiError(404, "No sensors found for this beacon group");
+    }
+    return res.status(200).json(
+        new ApiResponse(200, sensors, "Sensors fetched successfully")
+    );
+});
+
+export { createOrUpdateSensors, getSensorsForBeaconGroup  };

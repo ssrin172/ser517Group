@@ -7,6 +7,7 @@ const SensorSchema = new mongoose.Schema({
         x: { type: Number, required: true },
         y: { type: Number, required: true }
     },
+    sensorType: { type: String, required: true },
     sensorTrackingRange: { type: Number, required: true },
     deviceAngle: {
         type: Number,
@@ -17,7 +18,8 @@ const SensorSchema = new mongoose.Schema({
     description: { type: String },
     mitigationDetails: { type: String },
     purpose: { type: String },
-    beaconGroupId: { type: String, required: true } // Linked to BeaconGroup
+    beaconGroupId: { type: String, required: true },
+    dataCaptures: { type: String, required: true } // Linked to BeaconGroup
 });
 
 // Middleware to enforce deviceAngle for camera sensors

@@ -21,7 +21,7 @@ You can download Node.js from [here](https://nodejs.org/).
    git clone <repository_url>
    cd <project_directory>
    ```
-2. **Install Dependencies:
+2. **Install Dependencies:**
 
   Install the necessary dependencies by running:
 
@@ -29,10 +29,32 @@ You can download Node.js from [here](https://nodejs.org/).
   npm i
   ```
 
-3. Running the Development Server:
+3. **Running the Development Server:**
 
   After the dependencies are installed, start the development server with:
 
   ```bash
   npm run dev
   ```
+
+## Install Dependencies
+```
+npm install
+```
+
+## Environment Setup
+```
+PORT= {Port no.}
+MONGODB_URI= {Link to your mongoDB uri}
+
+
+# POSTMAN APIs: (GET/POST)
+CREATEORUPDATESENSORS= {your api request}
+GETSENSORSDATA= {your api request}
+```
+
+## Adding Initial Sensors Data to database (Optional)
+```
+node src/scripts/seedSensors.js
+```
+Replace seedSensors.js with the actual name of the file where your actual data to be pushed is stored

@@ -1,14 +1,15 @@
+// src/routes/beacon.routes.js
 import { Router } from "express";
-import {
-    createOrUpdateBeacon,
-    getSensorsForBeaconGroup,
-    groupBeaconsAndGetSensors
-} from "../controllers/beacon.controller.js";
+import { createOrUpdateSensors, getSensorsForBeaconGroup } from "../controllers/beacon.controller.js";
 
 const router = Router();
 
-router.route("/").post(createOrUpdateBeacon);
-router.route("/:beaconGroupId/sensors").get(getSensorsForBeaconGroup);
-router.route("/group").post(groupBeaconsAndGetSensors);
+// POST endpoint to create or update sensors for a beacon group.
+// The request body must include beaconGroupId and an array of sensor objects.
+router.post("/", createOrUpdateSensors);
 
-export default router;
+// GET endpoint to retrieve sensors for a given beacon group.
+// The beaconGroupId in the URL will be normalized.
+router.get("/:beaconGroupId/sensors", getSensorsForBeaconGroup);
+
+export  default  router;
