@@ -1,39 +1,20 @@
-import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import '../services/uwb_service.dart';
+import 'package:flutter/services.dart';
 
 class SensorsScreen extends StatefulWidget {
-  const SensorsScreen({super.key});
+  const SensorsScreen({Key? key}) : super(key: key);
 
   @override
   State<SensorsScreen> createState() => _SensorsScreenState();
 }
 
 class _SensorsScreenState extends State<SensorsScreen> {
-  late Timer _timer;
-
-  @override
-  void initState() {
-    super.initState();
-    // Start a periodic timer to update the UI every 1 second.
-    _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
-      setState(() {});
-    });
-  }
-
-  @override
-  void dispose() {
-    _timer.cancel();
-    super.dispose();
-  }
+  // Define the EventChannel used for receiving coordinate updates.
+  static const EventChannel _eventChannel =
+      EventChannel("com.example.uwbprivacyapp/updates");
 
   @override
   Widget build(BuildContext context) {
-    final uwbService = Provider.of<UWBService>(context);
-    final coordinates = uwbService.coordinates;
-    final beaconIDs = uwbService.connectedBeacons;
-
     return Scaffold(
       appBar: AppBar(
         title: const Text(
@@ -47,48 +28,56 @@ class _SensorsScreenState extends State<SensorsScreen> {
       backgroundColor: const Color(0xFF1E2023),
       body: Padding(
         padding: const EdgeInsets.all(20.0),
-        child: Column(
-          children: [
-            const SizedBox(height: 20),
-            const Text(
-              "Detected Beacons:",
-              style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white),
-            ),
-            const SizedBox(height: 10),
-            if (beaconIDs.isNotEmpty)
-              ...beaconIDs.map((id) => Text(
-                    "Beacon ID: $id",
-                    style: const TextStyle(fontSize: 18, color: Colors.white),
-                  ))
-            else
-              const Text(
-                "No beacons detected",
-                style: TextStyle(fontSize: 18, color: Colors.white),
-              ),
-            const SizedBox(height: 20),
-            const Divider(color: Colors.white),
-            const SizedBox(height: 20),
-            const Text(
-              "User Coordinates:",
-              style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white),
-            ),
-            const SizedBox(height: 10),
-            coordinates.isNotEmpty
-                ? Text(
+        child: StreamBuilder<dynamic>(
+          stream: _eventChannel.receiveBroadcastStream(),
+          builder: (context, AsyncSnapshot<dynamic> snapshot) {
+            if (snapshot.hasData) {
+              // Expecting a Map with keys "beaconIDs" and "coordinates"
+              final data = snapshot.data as Map<dynamic, dynamic>;
+              final beaconIDs = data['beaconIDs'] as List<dynamic>;
+              final coordinates = data['coordinates'] as Map<dynamic, dynamic>;
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const SizedBox(height: 20),
+                  const Text(
+                    "Detected Beacons:",
+                    style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white),
+                  ),
+                  const SizedBox(height: 10),
+                  ...beaconIDs.map((id) => Text(
+                        "Beacon ID: $id",
+                        style:
+                            const TextStyle(fontSize: 18, color: Colors.white),
+                      )),
+                  const SizedBox(height: 20),
+                  const Divider(color: Colors.white),
+                  const SizedBox(height: 20),
+                  const Text(
+                    "User Coordinates:",
+                    style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white),
+                  ),
+                  const SizedBox(height: 10),
+                  Text(
                     "X: ${coordinates['x']}, Y: ${coordinates['y']}",
                     style: const TextStyle(fontSize: 18, color: Colors.white),
-                  )
-                : const Text(
-                    "Coordinates not available",
-                    style: TextStyle(fontSize: 18, color: Colors.white),
                   ),
-          ],
+                ],
+              );
+            } else if (snapshot.hasError) {
+              return const Center(
+                  child: Text("Error receiving updates",
+                      style: TextStyle(color: Colors.white)));
+            } else {
+              return const Center(child: CircularProgressIndicator());
+            }
+          },
         ),
       ),
     );

@@ -23,7 +23,6 @@ struct QorvoNIService {
 struct Location {
     var distance: Float
     var direction: simd_float3
-    // For simplicity, we use only distance/direction; elevation can be added as needed.
 }
 
 class QorvoDevice {
@@ -40,18 +39,19 @@ class QorvoDevice {
         self.deviceID = deviceID
         self.name = name
         self.lastUpdate = timeStamp
-        self.uwbLocation = Location(distance: 0, direction: SIMD3<Float>(0,0,0))
+        self.uwbLocation = Location(distance: 0, direction: SIMD3<Float>(0, 0, 0))
     }
 }
 
-// MARK: - Qorvo Beacon Manager (Simplified)
+// MARK: - Qorvo Beacon Manager
 
 class QorvoBeaconManager: NSObject {
+    // Make discoveredDevices accessible for NI updates.
+    var discoveredDevices: [QorvoDevice] = []
     private var centralManager: CBCentralManager!
-    private var discoveredDevices: [QorvoDevice] = []
-    private let logger = os.Logger(subsystem: "com.example.uwbprivacyapp", category: "QorvoBeaconManager")
+    let logger = os.Logger(subsystem: "com.example.uwbprivacyapp", category: "QorvoBeaconManager")
     
-    // Completion callback to call when two beacons are connected
+    // Callback to be invoked when two beacons are connected.
     var onBeaconsConnected: (([QorvoDevice]) -> Void)?
     
     override init() {
@@ -60,7 +60,6 @@ class QorvoBeaconManager: NSObject {
     }
     
     func startScanning() {
-        // Scan for peripherals with the relevant service UUIDs
         centralManager.scanForPeripherals(withServices: [TransferService.serviceUUID, QorvoNIService.serviceUUID],
                                           options: [CBCentralManagerScanOptionAllowDuplicatesKey: true])
         logger.info("Started scanning for UWB beacons.")
@@ -71,10 +70,9 @@ class QorvoBeaconManager: NSObject {
         logger.info("Stopped scanning.")
     }
     
-    // When we have discovered at least two devices, auto-connect to them.
+    // Once at least two devices are discovered, attempt to connect.
     private func tryConnectToTwoBeacons() {
         if discoveredDevices.count >= 2 {
-            // For simplicity, pick the first two discovered devices
             let twoDevices = Array(discoveredDevices.prefix(2))
             twoDevices.forEach { device in
                 centralManager.connect(device.blePeripheral, options: nil)
@@ -83,9 +81,7 @@ class QorvoBeaconManager: NSObject {
         }
     }
     
-    // After connection and (in a real implementation) ranging,
-    // calculate user coordinates based on two distances.
-    // Here we simulate two distances to produce a coordinate.
+    // Calculate user coordinates using the measured distances.
     func calculateUserCoordinates() -> (x: Float, y: Float) {
         guard discoveredDevices.count >= 2,
               let distance1 = discoveredDevices[0].uwbLocation?.distance,
@@ -93,13 +89,14 @@ class QorvoBeaconManager: NSObject {
             return (0, 0)
         }
         
-        // For simplicity assume fixed beacon positions.
+        // Beacon positions – adjust these to your actual setup.
         let beacon1 = (x: Float(0.0), y: Float(0.0))
         let beacon2 = (x: Float(2.5), y: Float(0.0))
         
         let A = 2 * (beacon2.x - beacon1.x)
-        let B = 2 * (beacon2.y - beacon1.y)
-        let C = (distance1 * distance1) - (distance2 * distance2) - (beacon1.x * beacon1.x) + (beacon2.x * beacon2.x) - (beacon1.y * beacon1.y) + (beacon2.y * beacon2.y)
+        let C = (distance1 * distance1) - (distance2 * distance2)
+                  - (beacon1.x * beacon1.x) + (beacon2.x * beacon2.x)
+                  - (beacon1.y * beacon1.y) + (beacon2.y * beacon2.y)
         let x = C / A
         let yTerm = (distance1 * distance1) - ((x - beacon1.x) * (x - beacon1.x))
         let y = (yTerm > 0 ? sqrt(yTerm) : 0)
@@ -110,12 +107,12 @@ class QorvoBeaconManager: NSObject {
 }
 
 // MARK: - CBCentralManagerDelegate
+
 extension QorvoBeaconManager: CBCentralManagerDelegate {
     func centralManagerDidUpdateState(_ central: CBCentralManager) {
         if central.state == .poweredOn {
             logger.info("Bluetooth is powered on.")
-            // Removed: startScanning() call from here.
-            // Scanning will now only start when startScanning() is called explicitly via the method channel.
+            // Do not auto-start scanning here.
         } else {
             logger.error("Bluetooth not available.")
         }
@@ -123,13 +120,12 @@ extension QorvoBeaconManager: CBCentralManagerDelegate {
     
     func centralManager(_ central: CBCentralManager,
                         didDiscover peripheral: CBPeripheral,
-                        advertisementData: [String : Any],
+                        advertisementData: [String: Any],
                         rssi RSSI: NSNumber) {
         guard let name = advertisementData[CBAdvertisementDataLocalNameKey] as? String else { return }
         let deviceID = peripheral.hash
         let timeStamp = Int64(Date().timeIntervalSince1970 * 1000)
         
-        // Avoid duplicate entries
         if discoveredDevices.contains(where: { $0.deviceID == deviceID }) {
             return
         }
@@ -138,19 +134,13 @@ extension QorvoBeaconManager: CBCentralManagerDelegate {
         discoveredDevices.append(device)
         logger.info("Discovered beacon: \(name, privacy: .public)")
         
-        // When at least two devices are discovered, attempt connection.
         tryConnectToTwoBeacons()
     }
     
     func centralManager(_ central: CBCentralManager,
                         didConnect peripheral: CBPeripheral) {
         logger.info("Connected to peripheral: \(peripheral.name ?? "Unknown", privacy: .public)")
-        if let device = discoveredDevices.first(where: { $0.blePeripheral == peripheral }) {
-            // Simulate ranging update; in a real scenario, update from NI session.
-            device.uwbLocation = Location(distance: Float.random(in: 0.5...3.0),
-                                          direction: SIMD3<Float>(0, 0, 0))
-        }
-        
+        // Ranging updates will come from the NI session delegate.
         let connected = discoveredDevices.filter { $0.blePeripheral.state == .connected }
         if connected.count == 2 {
             stopScanning()
@@ -165,61 +155,159 @@ extension QorvoBeaconManager: CBCentralManagerDelegate {
     }
 }
 
-//
-// MARK: - Flutter Plugin Integration
-//
+// MARK: - Nearby Interaction (NI) Integration
 
-public class UWBHandler: NSObject, FlutterPlugin {
+extension QorvoBeaconManager: NISessionDelegate {
+    public func session(_ session: NISession, didUpdate nearbyObjects: [NINearbyObject]) {
+        // If two distinct accessories are available, update each device separately.
+        if nearbyObjects.count >= 2 {
+            let accessory1 = nearbyObjects[0]
+            let accessory2 = nearbyObjects[1]
+            if let distance1 = accessory1.distance, let distance2 = accessory2.distance {
+                if discoveredDevices.count >= 2 {
+                    discoveredDevices[0].uwbLocation = Location(
+                        distance: distance1,
+                        direction: accessory1.direction ?? SIMD3<Float>(0, 0, 0)
+                    )
+                    discoveredDevices[1].uwbLocation = Location(
+                        distance: distance2,
+                        direction: accessory2.direction ?? SIMD3<Float>(0, 0, 0)
+                    )
+                    logger.info("NI update - Device 0 distance: \(distance1), Device 1 distance: \(distance2)")
+                }
+            }
+        } else if let accessory = nearbyObjects.first, discoveredDevices.count > 0 {
+            // If only one accessory is available, update only the first device.
+            if let distance = accessory.distance {
+                discoveredDevices[0].uwbLocation = Location(
+                    distance: distance,
+                    direction: accessory.direction ?? SIMD3<Float>(0, 0, 0)
+                )
+                logger.info("NI update - Single device distance: \(distance)")
+            }
+        }
+    }
     
-    // Create an instance of our beacon manager.
+    public func session(_ session: NISession, didRemove nearbyObjects: [NINearbyObject], reason: NINearbyObject.RemovalReason) {
+        // Handle accessory removal if needed.
+    }
+    
+    public func sessionWasSuspended(_ session: NISession) {
+        logger.info("NI session was suspended.")
+    }
+    
+    public func sessionSuspensionEnded(_ session: NISession) {
+        logger.info("NI session suspension ended.")
+        // Optionally restart session if necessary.
+    }
+    
+    public func session(_ session: NISession, didInvalidateWith error: Error) {
+        logger.error("NI session invalidated: \(error.localizedDescription)")
+    }
+}
+
+// MARK: - Flutter Plugin Integration & Streaming
+
+public class UWBHandler: NSObject, FlutterPlugin, FlutterStreamHandler {
     var beaconManager = QorvoBeaconManager()
     
+    // Event channel variables.
+    var eventSink: FlutterEventSink?
+    var updateTimer: Timer?
+    
+    // For method channel callbacks.
+    var pendingResult: FlutterResult?
+    var connectedResult: [String: Any]?
+    
+    // NI session instance.
+    var niSession: NISession?
+    
     public static func register(with registrar: FlutterPluginRegistrar) {
-        let channel = FlutterMethodChannel(name: "com.example.uwbprivacyapp/uwb", binaryMessenger: registrar.messenger())
+        let methodChannel = FlutterMethodChannel(name: "com.example.uwbprivacyapp/uwb",
+                                                   binaryMessenger: registrar.messenger())
+        let eventChannel = FlutterEventChannel(name: "com.example.uwbprivacyapp/updates",
+                                                 binaryMessenger: registrar.messenger())
         let instance = UWBHandler()
-        registrar.addMethodCallDelegate(instance, channel: channel)
+        registrar.addMethodCallDelegate(instance, channel: methodChannel)
+        eventChannel.setStreamHandler(instance)
     }
     
     public override init() {
         super.init()
-        // When two beacons are connected, send the beacon IDs and calculated coordinates back to Flutter.
-        beaconManager.onBeaconsConnected = { devices in
-            // Calculate coordinates based on simulated ranging data.
+        niSession = NISession()
+        niSession?.delegate = beaconManager
+        
+        // When two beacons are connected, start streaming updates.
+        beaconManager.onBeaconsConnected = { [weak self] devices in
+            guard let self = self else { return }
+            self.beaconManager.stopScanning()
+            
+            // *** IMPORTANT ***
+            // Replace the following placeholder NI session run with your actual configuration:
+            // Example:
+            // if let token = devices.first?.discoveryToken {
+            //     let configuration = NINearbyAccessoryConfiguration(discoveryToken: token)
+            //     configuration.isCameraAssistanceEnabled = true
+            //     self.niSession?.run(configuration)
+            // }
+            
+            self.updateTimer?.invalidate()
+            self.updateTimer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { _ in
+                let coords = self.beaconManager.calculateUserCoordinates()
+                let connectedDevices = self.beaconManager.discoveredDevices.prefix(2)
+                let beaconIDs = connectedDevices.map { "\($0.deviceID)" }
+                let data: [String: Any] = [
+                    "beaconIDs": beaconIDs,
+                    "coordinates": ["x": coords.x, "y": coords.y]
+                ]
+                self.eventSink?(data)
+            }
+            
             let coords = self.beaconManager.calculateUserCoordinates()
-            let beaconIDs = devices.map { "\($0.deviceID)" }
-            // Store the result so we can return it from the method channel call.
-            self.connectedResult = ["beaconIDs": beaconIDs,
-                                    "coordinates": ["x": coords.x, "y": coords.y]]
-            // If waiting, call the stored result callback.
+            let connectedDevices = self.beaconManager.discoveredDevices.prefix(2)
+            let beaconIDs = connectedDevices.map { "\($0.deviceID)" }
+            self.connectedResult = [
+                "beaconIDs": beaconIDs,
+                "coordinates": ["x": coords.x, "y": coords.y]
+            ]
             self.callResultIfNeeded()
         }
     }
     
-    // A placeholder to store the FlutterMethodCall result callback.
-    var pendingResult: FlutterResult?
-    var connectedResult: [String: Any]?
-    
+    // MARK: - Method Channel Handler
     public func handle(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
         switch call.method {
         case "startScanning":
-            // Clear previous data
             connectedResult = nil
             pendingResult = result
-            // Start scanning
             beaconManager.startScanning()
         case "stopScanning":
             beaconManager.stopScanning()
+            updateTimer?.invalidate()
+            updateTimer = nil
             result(nil)
         default:
             result(FlutterMethodNotImplemented)
         }
     }
     
-    // If the connected result is ready and a result callback is pending, send data back to Flutter.
     func callResultIfNeeded() {
         if let res = connectedResult, let pending = pendingResult {
             pending(res)
             pendingResult = nil
         }
+    }
+    
+    // MARK: - FlutterStreamHandler Methods
+    public func onListen(withArguments arguments: Any?, eventSink events: @escaping FlutterEventSink) -> FlutterError? {
+        eventSink = events
+        return nil
+    }
+    
+    public func onCancel(withArguments arguments: Any?) -> FlutterError? {
+        eventSink = nil
+        updateTimer?.invalidate()
+        updateTimer = nil
+        return nil
     }
 }
