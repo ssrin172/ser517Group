@@ -18,21 +18,20 @@ class _LoadingScreenState extends State<LoadingScreen> {
     super.initState();
     final uwbService = Provider.of<UWBService>(context, listen: false);
 
-    // Start scanning for UWB beacons.
-    uwbService.startScanning().catchError((e) {
-      print("Scanning error: $e");
-    });
+    // Wait 3 seconds before starting the scanning process.
+    Future.delayed(const Duration(seconds: 3), () async {
+      try {
+        await uwbService.startScanning();
+      } catch (e) {
+        print("Scanning error: $e");
+      }
 
-    // Wait 3 seconds before checking connectivity.
-    Future.delayed(const Duration(seconds: 3), () {
       if (uwbService.isConnected && uwbService.connectedBeacons.length >= 2) {
-        // If two beacons are connected, navigate to the sensors screen.
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (context) => const SensorsScreen()),
         );
       } else {
-        // Otherwise, show the error state.
         setState(() {
           _showError = true;
         });
@@ -77,7 +76,6 @@ class _LoadingScreenState extends State<LoadingScreen> {
         const SizedBox(height: 10),
         ElevatedButton(
           onPressed: () {
-            // Navigate back to the HomeScreen to retry scanning.
             Navigator.pop(context);
           },
           style: ElevatedButton.styleFrom(

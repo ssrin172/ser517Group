@@ -114,7 +114,8 @@ extension QorvoBeaconManager: CBCentralManagerDelegate {
     func centralManagerDidUpdateState(_ central: CBCentralManager) {
         if central.state == .poweredOn {
             logger.info("Bluetooth is powered on.")
-            startScanning()
+            // Removed: startScanning() call from here.
+            // Scanning will now only start when startScanning() is called explicitly via the method channel.
         } else {
             logger.error("Bluetooth not available.")
         }
@@ -137,24 +138,19 @@ extension QorvoBeaconManager: CBCentralManagerDelegate {
         discoveredDevices.append(device)
         logger.info("Discovered beacon: \(name, privacy: .public)")
         
-        // If we have found two beacons, attempt to connect.
+        // When at least two devices are discovered, attempt connection.
         tryConnectToTwoBeacons()
     }
     
     func centralManager(_ central: CBCentralManager,
                         didConnect peripheral: CBPeripheral) {
         logger.info("Connected to peripheral: \(peripheral.name ?? "Unknown", privacy: .public)")
-        // In a real implementation, you would start service/characteristic discovery,
-        // subscribe for notifications, and update `uwbLocation` when ranging data arrives.
-        // For this example, we simulate that ranging data is received immediately.
-        
         if let device = discoveredDevices.first(where: { $0.blePeripheral == peripheral }) {
-            // Simulate a ranging update (in a real scenario, update from NI session)
+            // Simulate ranging update; in a real scenario, update from NI session.
             device.uwbLocation = Location(distance: Float.random(in: 0.5...3.0),
                                           direction: SIMD3<Float>(0, 0, 0))
         }
         
-        // When both beacons are connected, call the completion.
         let connected = discoveredDevices.filter { $0.blePeripheral.state == .connected }
         if connected.count == 2 {
             stopScanning()
