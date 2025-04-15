@@ -2,3 +2,439 @@ I am working on a project. It is a privacy project. It involves the usage of Qor
 
  The application starts with a homepage that contains a welcome screen and a "start scanning" button. when the user clicks on the start scanning button, the application starts searching for the nearby ultrawide band beacons. if the beacons are found, our application tries to establish an initial 2-way handshake connection using bluetooth. The technology used here is Apple's Nearby Interaction. Once the beacons are connected, the beacon ids are retrieved and now using the beacons and iphone communication using apple nearby interaction, we try to get the distance of the user using the nearby interaction. using that distance we need to calculate the user coordinates and send a get api call to the backend sending the beacon ids. Now at the backend I already have sensor data which would be called using the beacon ids. This sensor data will be sent by the backend which would be containing all the data about the sensors linked to the beacon ids. This will contain the coordinates of the sensors(x,y) meaning where the sensors are placed in the room(hard coded values). there is a native ios file which contains the code for bluetooth connection between the phone and the beacons. It also has a file that contains the code to calculate teh distance of the user from each sensor device as we will get the user coordinates and each sensor coordinates. This file is in the ios folder and it communicates with flutter using method channel.
 Now once I have the user coordinates and the sensor coordinates, I can calculate the diatance of the user from sensors and check if the user is in the tracking range of hte user or not.
+
+
+I will give you the code files of my flutter app.
+
+home_screen.dart
+
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../services/uwb_service.dart';
+import 'loading_screen.dart'; // Import the new loading screen.
+import '../widgets/background_scaffold.dart'; // import the custom scaffold
+
+class HomeScreen extends StatefulWidget {
+  const HomeScreen({super.key});
+
+  @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
+  bool _isSearching = false;
+  String _statusMessage = 'Ready to scan for UWB beacons';
+
+  @override
+  Widget build(BuildContext context) {
+    final uwbService = Provider.of<UWBService>(context);
+
+    return BackgroundScaffold(
+      appBar: AppBar(
+        title: const Text(
+          'SENSA',
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            fontSize: 20,
+            color: Colors.white,
+          ),
+        ),
+        centerTitle: false,
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        actions: [
+          Padding(
+            padding: const EdgeInsets.only(right: 16.0),
+            child: CircleAvatar(
+              radius: 20,
+              backgroundImage:
+                  const AssetImage("assets/images/user_avatar.png"),
+            ),
+          ),
+        ],
+      ),
+      body: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(20.0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              // Greeting texts can be added here as desired.
+              const Text(
+                "Good evening,",
+                style: TextStyle(fontSize: 22, color: Colors.white),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 8.0),
+              const Text(
+                "HI PRANUT JAIN !",
+                style: TextStyle(
+                    fontSize: 28,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 30),
+              // Replace the sensor icon with an image asset.
+              Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Image.asset(
+                  'assets/images/sensor_logo.png',
+                  width: 150,
+                  height: 150,
+                  fit: BoxFit.contain,
+                ),
+              ),
+              const SizedBox(height: 30),
+              Text(
+                _statusMessage,
+                style: const TextStyle(fontSize: 18, color: Colors.white),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 40),
+              if (!_isSearching && !uwbService.isConnected)
+                ElevatedButton(
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      PageRouteBuilder(
+                        pageBuilder: (context, animation, secondaryAnimation) =>
+                            const LoadingScreen(),
+                        transitionsBuilder:
+                            (context, animation, secondaryAnimation, child) {
+                          // Use a FadeTransition for smooth fading
+                          return FadeTransition(
+                            opacity: animation,
+                            child: child,
+                          );
+                        },
+                        transitionDuration: const Duration(milliseconds: 500),
+                      ),
+                    );
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF007AFF),
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 40, vertical: 15),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                  ),
+                  child: const Text(
+                    'START SCAN',
+                    style: TextStyle(fontSize: 18),
+                  ),
+                ),
+
+              if (_isSearching) const CircularProgressIndicator(),
+              if (uwbService.isConnected)
+                const Icon(Icons.check_circle, color: Colors.green, size: 50),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+
+loading_screen.dart
+
+
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../services/uwb_service.dart';
+import 'sensors_screen.dart';
+
+class LoadingScreen extends StatefulWidget {
+  const LoadingScreen({super.key});
+
+  @override
+  State<LoadingScreen> createState() => _LoadingScreenState();
+}
+
+class _LoadingScreenState extends State<LoadingScreen> {
+  bool _showError = false;
+
+  @override
+  void initState() {
+    super.initState();
+    final uwbService = Provider.of<UWBService>(context, listen: false);
+
+    // Wait 3 seconds before starting the scanning process.
+    Future.delayed(const Duration(seconds: 3), () async {
+      try {
+        await uwbService.startScanning();
+      } catch (e) {
+        print("Scanning error: $e");
+      }
+
+      if (uwbService.isConnected && uwbService.connectedBeacons.length >= 2) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const SensorsScreen()),
+        );
+      } else {
+        setState(() {
+          _showError = true;
+        });
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: const Color(0xFF1E2023),
+      body: Center(
+        child: _showError ? _buildErrorContent() : _buildLoadingContent(),
+      ),
+    );
+  }
+
+  Widget _buildLoadingContent() {
+    return Image.asset(
+      'assets/images/loading.gif',
+      width: 150,
+      height: 150,
+      fit: BoxFit.contain,
+    );
+  }
+
+  Widget _buildErrorContent() {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Image.asset(
+          'assets/images/error.png',
+          width: 150,
+          height: 150,
+          fit: BoxFit.contain,
+        ),
+        const SizedBox(height: 20),
+        const Text(
+          "Couldn't scan :)",
+          style: TextStyle(fontSize: 18, color: Colors.white),
+        ),
+        const SizedBox(height: 10),
+        ElevatedButton(
+          onPressed: () {
+            Navigator.pop(context);
+          },
+          style: ElevatedButton.styleFrom(
+            backgroundColor: const Color(0xFF007AFF),
+            foregroundColor: Colors.white,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
+          ),
+          child: const Text("Scan Again"),
+        ),
+      ],
+    );
+  }
+}
+
+sensors_screen.dart
+
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+
+class SensorsScreen extends StatefulWidget {
+  const SensorsScreen({Key? key}) : super(key: key);
+
+  @override
+  State<SensorsScreen> createState() => _SensorsScreenState();
+}
+
+class _SensorsScreenState extends State<SensorsScreen> {
+  // Define the EventChannel used for receiving coordinate updates.
+  static const EventChannel _eventChannel =
+      EventChannel("com.example.uwbprivacyapp/updates");
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text(
+          "Sensors Info",
+          style: TextStyle(color: Colors.white),
+        ),
+        centerTitle: true,
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+      ),
+      backgroundColor: const Color(0xFF1E2023),
+      body: Padding(
+        padding: const EdgeInsets.all(20.0),
+        child: StreamBuilder<dynamic>(
+          stream: _eventChannel.receiveBroadcastStream(),
+          builder: (context, AsyncSnapshot<dynamic> snapshot) {
+            if (snapshot.hasData) {
+              // Expecting a Map with keys "beaconIDs" and "coordinates"
+              final data = snapshot.data as Map<dynamic, dynamic>;
+              final beaconIDs = data['beaconIDs'] as List<dynamic>;
+              final coordinates = data['coordinates'] as Map<dynamic, dynamic>;
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const SizedBox(height: 20),
+                  const Text(
+                    "Detected Beacons:",
+                    style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white),
+                  ),
+                  const SizedBox(height: 10),
+                  ...beaconIDs.map((id) => Text(
+                        "Beacon ID: $id",
+                        style:
+                            const TextStyle(fontSize: 18, color: Colors.white),
+                      )),
+                  const SizedBox(height: 20),
+                  const Divider(color: Colors.white),
+                  const SizedBox(height: 20),
+                  const Text(
+                    "User Coordinates:",
+                    style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white),
+                  ),
+                  const SizedBox(height: 10),
+                  Text(
+                    "X: ${coordinates['x']}, Y: ${coordinates['y']}",
+                    style: const TextStyle(fontSize: 18, color: Colors.white),
+                  ),
+                ],
+              );
+            } else if (snapshot.hasError) {
+              return const Center(
+                  child: Text("Error receiving updates",
+                      style: TextStyle(color: Colors.white)));
+            } else {
+              return const Center(child: CircularProgressIndicator());
+            }
+          },
+        ),
+      ),
+    );
+  }
+}
+
+uwb_service.dart
+
+import 'package:flutter/services.dart';
+import 'package:flutter/foundation.dart';
+
+class UWBService with ChangeNotifier {
+  static const platform = MethodChannel('com.example.uwbprivacyapp/uwb');
+
+  bool _isConnected = false;
+  List<String> _connectedBeacons = [];
+  Map<String, dynamic> _coordinates = {};
+
+  bool get isConnected => _isConnected;
+  List<String> get connectedBeacons => _connectedBeacons;
+  Map<String, dynamic> get coordinates => _coordinates;
+
+  Future<void> startScanning() async {
+    try {
+      final result = await platform.invokeMethod('startScanning');
+
+      if (result is Map) {
+        _isConnected = true;
+        _connectedBeacons = List<String>.from(result['beaconIDs'] ?? []);
+        _coordinates = Map<String, dynamic>.from(result['coordinates'] ?? {});
+        notifyListeners();
+      }
+    } on PlatformException catch (e) {
+      throw Exception("Failed to start scanning: ${e.message}");
+    }
+  }
+
+  Future<void> stopScanning() async {
+    try {
+      await platform.invokeMethod('stopScanning');
+      _isConnected = false;
+      _connectedBeacons = [];
+      _coordinates = {};
+      notifyListeners();
+    } on PlatformException catch (e) {
+      throw Exception("Failed to stop scanning: ${e.message}");
+    }
+  }
+}
+
+main.dart
+
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'screens/home_screen.dart';
+import 'services/uwb_service.dart';
+
+void main() {
+  runApp(
+    ChangeNotifierProvider(
+      create: (context) => UWBService(),
+      child: const MyApp(),
+    ),
+  );
+}
+
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'UWB Privacy App',
+      debugShowCheckedModeBanner: false,
+      theme: ThemeData(
+        primarySwatch: Colors.blue,
+        visualDensity: VisualDensity.adaptivePlatformDensity,
+        // Global text theme forcing all text to white.
+        textTheme: const TextTheme(
+          bodyLarge: TextStyle(color: Colors.white),
+          bodyMedium: TextStyle(color: Colors.white),
+          bodySmall: TextStyle(color: Colors.white),
+          titleLarge: TextStyle(color: Colors.white),
+          titleMedium: TextStyle(color: Colors.white),
+          titleSmall: TextStyle(color: Colors.white),
+        ),
+        // Ensure AppBar title and icons are white.
+        appBarTheme: const AppBarTheme(
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          titleTextStyle: TextStyle(
+            fontSize: 20,
+            color: Colors.white,
+          ),
+          iconTheme: IconThemeData(color: Colors.white),
+        ),
+      ),
+      home: const HomeScreen(),
+      builder: (context, child) {
+        return Container(
+          decoration: const BoxDecoration(
+            image: DecorationImage(
+              image: AssetImage("assets/images/background.png"),
+              fit: BoxFit.cover,
+            ),
+          ),
+          child: child,
+        );
+      },
+    );
+  }
+}
+
+
+
+I will explain you the frontend code.
+
+When the application starts, the homepage appears  that contain start scanning button. When the user clicks on that button, the loading screen page appears that shows the loading gif, while searching for two uwb beacons(our application requires to be connected with two beacons to give more accurate user coordinates). It dies not immediately start searching for beacons, but takes a 3 second delay so that the user could see hte loading gif properly for three seconds. After that if the two beacons are found, the iphone gets connected ot the two beacons and moves to the sensors page. If the two beacons are not found, on the loading screen page, the error.png image appears telling the user that the uwb beacons are not found. now if the two beacons are found, teh sensors page appears and shows the user two beacon ids along with the user coordintes. The user coordinates are dynamic and should change as the user moves in the room. 
+
+This information I have provided so taht you can understand the flutter code.   
