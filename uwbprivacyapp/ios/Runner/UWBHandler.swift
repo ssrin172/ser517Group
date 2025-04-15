@@ -4,14 +4,14 @@ import NearbyInteraction
 import simd
 import os
 
-// This file now focuses only on handling user coordinates.
+// This file now focuses only on handling user coordinates and communicating with Flutter.
 
 public class UWBHandler: NSObject, FlutterPlugin, FlutterStreamHandler {
-    var connectionManager = ConnectionManager()
+    
     var updateTimer: Timer?
     var eventSink: FlutterEventSink?
     var pendingResult: FlutterResult?
-    var connectedDevices: [QorvoDevice]?
+    var connectedDevices: [QorvoDevice]?  // This should be updated by your BLE connection logic.
     let logger = os.Logger(subsystem: "com.example.uwbprivacyapp", category: "UWBHandler")
     
     // NI session for receiving location updates.
@@ -29,9 +29,8 @@ public class UWBHandler: NSObject, FlutterPlugin, FlutterStreamHandler {
     
     public override init() {
         super.init()
-        connectionManager.delegate = self
         niSession = NISession()
-        // If needed, set the NI session delegate here.
+        // Set the NI session delegate here if needed.
     }
     
     // Calculate user coordinates using the distances from connected devices.
@@ -43,7 +42,7 @@ public class UWBHandler: NSObject, FlutterPlugin, FlutterStreamHandler {
             return (0, 0)
         }
         
-        // Example beacon positions; adjust according to actual setup.
+        // Example beacon positions; adjust these according to your actual setup.
         let beacon1 = (x: Float(0.0), y: Float(0.0))
         let beacon2 = (x: Float(2.5), y: Float(0.0))
         
@@ -64,12 +63,16 @@ public class UWBHandler: NSObject, FlutterPlugin, FlutterStreamHandler {
         switch call.method {
         case "startScanning":
             pendingResult = result
-            connectionManager.startScanning()
+            logger.info("startScanning called in UWBHandler.")
+            // TODO: Insert your actual scanning/connection logic here.
+            // For now, assume that scanning begins and connectedDevices will be updated externally.
+            
         case "stopScanning":
-            connectionManager.stopScanning()
+            // TODO: Insert your logic to stop scanning or disconnect devices, if needed.
             updateTimer?.invalidate()
             updateTimer = nil
             result(nil)
+            
         default:
             result(FlutterMethodNotImplemented)
         }
@@ -85,6 +88,7 @@ public class UWBHandler: NSObject, FlutterPlugin, FlutterStreamHandler {
     func connectedCoordinatesResult() -> [String: Any]? {
         guard let devices = connectedDevices, devices.count >= 2 else { return nil }
         let coords = calculateUserCoordinates()
+        // Here we use the first two devices' IDs as beacon IDs.
         let beaconIDs = devices.prefix(2).map { "\($0.deviceID)" }
         return [
             "beaconIDs": beaconIDs,
@@ -95,11 +99,10 @@ public class UWBHandler: NSObject, FlutterPlugin, FlutterStreamHandler {
     // MARK: - FlutterStreamHandler Methods
     public func onListen(withArguments arguments: Any?, eventSink events: @escaping FlutterEventSink) -> FlutterError? {
         eventSink = events
-        // Start a timer to update coordinates every second.
         updateTimer?.invalidate()
         updateTimer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { [weak self] _ in
-            if let result = self?.connectedCoordinatesResult() {
-                self?.eventSink?(result)
+            if let res = self?.connectedCoordinatesResult() {
+                self?.eventSink?(res)
             }
         }
         return nil
@@ -113,10 +116,9 @@ public class UWBHandler: NSObject, FlutterPlugin, FlutterStreamHandler {
     }
 }
 
-extension UWBHandler: ConnectionManagerDelegate {
-    func didConnectToDevices(_ devices: [QorvoDevice]) {
-        connectedDevices = devices
-        connectionManager.stopScanning()
-        callResultIfNeeded()
+extension QorvoDevice {
+    // Convenience property for deviceID.
+    var deviceID: Int {
+        return bleUniqueID
     }
 }

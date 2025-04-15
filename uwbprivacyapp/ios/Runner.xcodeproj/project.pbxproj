@@ -16,10 +16,10 @@
 		97C146FC1CF9000F007C117D /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 97C146FA1CF9000F007C117D /* Main.storyboard */; };
 		97C146FE1CF9000F007C117D /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 97C146FD1CF9000F007C117D /* Assets.xcassets */; };
 		97C147011CF9000F007C117D /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 97C146FF1CF9000F007C117D /* LaunchScreen.storyboard */; };
-		C45979AF2DACAD430005BE67 /* ConnectionManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = C45979AE2DACAD3E0005BE67 /* ConnectionManager.swift */; };
 		C45979C82DAE46CF0005BE67 /* QorvoBeaconManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = C45979C72DAE46CA0005BE67 /* QorvoBeaconManager.swift */; };
 		C45979CA2DAE47870005BE67 /* DataCommunicationChannel.swift in Sources */ = {isa = PBXBuildFile; fileRef = C45979C92DAE47810005BE67 /* DataCommunicationChannel.swift */; };
 		C45979CC2DAE481D0005BE67 /* Settings.swift in Sources */ = {isa = PBXBuildFile; fileRef = C45979CB2DAE481A0005BE67 /* Settings.swift */; };
+		C45979D22DAE4FA60005BE67 /* QorvoBluetoothManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = C45979D12DAE4FA00005BE67 /* QorvoBluetoothManager.swift */; };
 		C4FA2EE12DA1268500FD3E31 /* UWBHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4FA2EE02DA1268500FD3E31 /* UWBHandler.swift */; };
 		C4FA2EE32DA1279F00FD3E31 /* NearbyInteraction.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C4FA2EE22DA1279F00FD3E31 /* NearbyInteraction.framework */; };
 /* End PBXBuildFile section */
@@ -68,10 +68,10 @@
 		97C147001CF9000F007C117D /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/LaunchScreen.storyboard; sourceTree = "<group>"; };
 		97C147021CF9000F007C117D /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		9FA08A3B6526F3500F8137C1 /* Pods_RunnerTests.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_RunnerTests.framework; sourceTree = BUILT_PRODUCTS_DIR; };
-		C45979AE2DACAD3E0005BE67 /* ConnectionManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConnectionManager.swift; sourceTree = "<group>"; };
 		C45979C72DAE46CA0005BE67 /* QorvoBeaconManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QorvoBeaconManager.swift; sourceTree = "<group>"; };
 		C45979C92DAE47810005BE67 /* DataCommunicationChannel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DataCommunicationChannel.swift; sourceTree = "<group>"; };
 		C45979CB2DAE481A0005BE67 /* Settings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Settings.swift; sourceTree = "<group>"; };
+		C45979D12DAE4FA00005BE67 /* QorvoBluetoothManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QorvoBluetoothManager.swift; sourceTree = "<group>"; };
 		C4FA2EE02DA1268500FD3E31 /* UWBHandler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UWBHandler.swift; sourceTree = "<group>"; };
 		C4FA2EE22DA1279F00FD3E31 /* NearbyInteraction.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = NearbyInteraction.framework; path = System/Library/Frameworks/NearbyInteraction.framework; sourceTree = SDKROOT; };
 		CDAD37943FD3455A4EA77BC0 /* Pods-RunnerTests.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-RunnerTests.release.xcconfig"; path = "Target Support Files/Pods-RunnerTests/Pods-RunnerTests.release.xcconfig"; sourceTree = "<group>"; };
@@ -153,10 +153,10 @@
 		97C146F01CF9000F007C117D /* Runner */ = {
 			isa = PBXGroup;
 			children = (
+				C45979D12DAE4FA00005BE67 /* QorvoBluetoothManager.swift */,
 				C45979CB2DAE481A0005BE67 /* Settings.swift */,
 				C45979C92DAE47810005BE67 /* DataCommunicationChannel.swift */,
 				C45979C72DAE46CA0005BE67 /* QorvoBeaconManager.swift */,
-				C45979AE2DACAD3E0005BE67 /* ConnectionManager.swift */,
 				C4FA2EE02DA1268500FD3E31 /* UWBHandler.swift */,
 				97C146FA1CF9000F007C117D /* Main.storyboard */,
 				97C146FD1CF9000F007C117D /* Assets.xcassets */,
@@ -378,11 +378,11 @@
 			buildActionMask = 2147483647;
 			files = (
 				74858FAF1ED2DC5600515810 /* AppDelegate.swift in Sources */,
-				C45979AF2DACAD430005BE67 /* ConnectionManager.swift in Sources */,
 				C4FA2EE12DA1268500FD3E31 /* UWBHandler.swift in Sources */,
 				C45979C82DAE46CF0005BE67 /* QorvoBeaconManager.swift in Sources */,
 				C45979CC2DAE481D0005BE67 /* Settings.swift in Sources */,
 				C45979CA2DAE47870005BE67 /* DataCommunicationChannel.swift in Sources */,
+				C45979D22DAE4FA60005BE67 /* QorvoBluetoothManager.swift in Sources */,
 				1498D2341E8E89220040F4C2 /* GeneratedPluginRegistrant.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

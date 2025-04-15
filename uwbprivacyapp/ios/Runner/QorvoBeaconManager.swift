@@ -23,15 +23,14 @@ enum MessageId: UInt8 {
 
 // MARK: - QorvoBeaconManager Class
 /// This class encapsulates all beacon and UWB connection logic for Qorvo devices.
-/// It uses your real data communication channel and Nearby Interaction configurations
-/// to connect and exchange data with your Qorvo beacons.
+/// It now uses QorvoBluetoothManager (instead of DataCommunicationChannel) to handle all BLE operations.
 class QorvoBeaconManager: NSObject {
 
     // MARK: - Properties
     private let logger = OSLog(subsystem: "com.qorvo.uwb", category: "QorvoBeaconManager")
 
-    /// The data channel handling low-level communication with the accessories.
-    var dataChannel = DataCommunicationChannel()
+    /// The bluetooth manager handling BLE communications for our beacons.
+    var bluetoothManager = QorvoBluetoothManager()
 
     /// The configuration generated from accessory data.
     var configuration: NINearbyAccessoryConfiguration?
@@ -39,13 +38,13 @@ class QorvoBeaconManager: NSObject {
     /// Currently selected accessory device ID.
     var selectedAccessory: Int = -1
 
-    /// Flag indicating algorithm convergence.
+    /// Flag indicating NI session convergence.
     var isConverged: Bool = false
 
     /// Mapping of device IDs to NI sessions.
     var referenceDict: [Int: NISession] = [:]
 
-    /// Mapping from discovery token to accessory names.
+    /// Mapping from discovery tokens to accessory names.
     var accessoryMap: [NIDiscoveryToken: String] = [:]
 
     /// Holds distance values received from accessories.
@@ -53,48 +52,49 @@ class QorvoBeaconManager: NSObject {
 
     /// Fixed beacon positions used for coordinate calculations.
     let beaconPositions: [Int: (Float, Float)] = [
-        112456485: (0.0, 0.0),   // For example: beacon 1 position
-        143285168: (2.5, 0.0)      // For example: beacon 2 position
+        112456485: (0.0, 0.0),   // Example beacon 1 position
+        143285168: (2.5, 0.0)      // Example beacon 2 position
     ]
 
     // MARK: - Initialization
     override init() {
         super.init()
-        // Set up callbacks on the data channel (ensure these point to your real implementation).
-        dataChannel.accessoryDataHandler = { [weak self] data, accessoryName, deviceID in
+        // Set up the callbacks from the bluetoothManager.
+        bluetoothManager.accessoryDataHandler = { [weak self] data, accessoryName, deviceID in
             self?.accessorySharedData(data: data, accessoryName: accessoryName, deviceID: deviceID)
         }
-        dataChannel.accessorySynchHandler = { [weak self] index, insert in
+        bluetoothManager.accessorySynchHandler = { [weak self] index, insert in
             self?.accessorySynch(index: index, insert: insert)
         }
-        dataChannel.accessoryConnectedHandler = { [weak self] deviceID in
+        bluetoothManager.accessoryConnectedHandler = { [weak self] deviceID in
             self?.accessoryConnected(deviceID: deviceID)
         }
-        dataChannel.accessoryDisconnectedHandler = { [weak self] deviceID in
+        bluetoothManager.accessoryDisconnectedHandler = { [weak self] deviceID in
             self?.accessoryDisconnected(deviceID: deviceID)
         }
-        // Note: The channel is started in startScanning().
+        // Note: The bluetoothManager's scanning is started in startScanning()
     }
     
     // MARK: - Public Methods for Scanning
     func startScanning() {
         os_log("startScanning called in QorvoBeaconManager.", log: logger, type: .info)
-        // Start the real data channel which begins scanning for beacons.
-        dataChannel.start()
+        // Start scanning via the BLE manager.
+        bluetoothManager.start()
     }
     
     func stopScanning() {
         os_log("stopScanning called in QorvoBeaconManager.", log: logger, type: .info)
-        // Disconnect from all accessories.
+        // Disconnect from all active accessories.
         for deviceID in referenceDict.keys {
             disconnectFromAccessory(deviceID: deviceID)
         }
-        // If supported by your data channel, stop it here.
-        // e.g., dataChannel.stop()
+        // If your bluetoothManager has its own stop method, call it here.
+        // For example: bluetoothManager.stop()
     }
     
-    // MARK: - Data Channel Handlers
+    // MARK: - Data Handlers
     func accessorySharedData(data: Data, accessoryName: String, deviceID: Int) {
+        // Check that there is at least one byte.
         if data.count < 1 {
             os_log("Received empty data from accessory.", log: logger, type: .error)
             return
@@ -103,7 +103,6 @@ class QorvoBeaconManager: NSObject {
             fatalError("\(data.first!) is not a valid MessageId.")
         }
         
-        // Process the received message from the accessory.
         switch messageId {
         case .accessoryConfigurationData:
             let message = data.advanced(by: 1)
@@ -132,13 +131,13 @@ class QorvoBeaconManager: NSObject {
             selectedAccessory = deviceID
             os_log("Selected device set to %d.", log: logger, type: .info, deviceID)
         }
-        // Create a new NI session and register it.
+        // Create and store a new NI Session.
         let session = NISession()
         session.delegate = self
         referenceDict[deviceID] = session
         os_log("Device %d connected; NI Session created.", log: logger, type: .info, deviceID)
         
-        // Send the real initialization command to the accessory.
+        // Send initialization command to accessory.
         let msg = Data([MessageId.initialize.rawValue])
         sendDataToAccessory(data: msg, deviceID: deviceID)
     }
@@ -163,7 +162,6 @@ class QorvoBeaconManager: NSObject {
             os_log("Failed to create configuration for '%{public}@': %{public}@", log: logger, type: .error, name, "\(error)")
             return
         }
-        
         if let config = configuration {
             accessoryMap[config.accessoryDiscoveryToken] = name
             if let session = referenceDict[deviceID] {
@@ -175,7 +173,7 @@ class QorvoBeaconManager: NSObject {
     
     func handleAccessoryUwbDidStart(deviceID: Int) {
         os_log("Accessory UWB did start for device %d.", log: logger, type: .info, deviceID)
-        // Here you can add any additional logic once the accessory’s UWB is active.
+        // Insert additional logic for when UWB starts, if needed.
     }
     
     func handleAccessoryUwbDidStop(deviceID: Int) {
@@ -186,7 +184,7 @@ class QorvoBeaconManager: NSObject {
     // MARK: - Communication Methods
     func sendDataToAccessory(data: Data, deviceID: Int) {
         do {
-            try dataChannel.sendData(data, deviceID)
+            try bluetoothManager.sendData(data, deviceID)
             os_log("Data sent to device %d.", log: logger, type: .info, deviceID)
         } catch {
             os_log("Failed to send data to device %d: %{public}@", log: logger, type: .error, deviceID, "\(error)")
@@ -195,7 +193,7 @@ class QorvoBeaconManager: NSObject {
     
     func disconnectFromAccessory(deviceID: Int) {
         do {
-            try dataChannel.disconnectPeripheral(deviceID)
+            try bluetoothManager.disconnectPeripheral(deviceID)
             os_log("Disconnected from device %d.", log: logger, type: .info, deviceID)
         } catch {
             os_log("Failed to disconnect from device %d: %{public}@", log: logger, type: .error, deviceID, "\(error)")
@@ -208,20 +206,17 @@ class QorvoBeaconManager: NSObject {
             os_log("Not enough data to calculate coordinates.", log: logger, type: .error)
             return
         }
-        
         let deviceIDs = Array(deviceDistances.keys)
         guard let distance1 = deviceDistances[deviceIDs[0]],
               let distance2 = deviceDistances[deviceIDs[1]] else {
             os_log("Error: Missing distance data.", log: logger, type: .error)
             return
         }
-        
         guard let beacon1 = beaconPositions[deviceIDs[0]],
               let beacon2 = beaconPositions[deviceIDs[1]] else {
             os_log("Error: Missing beacon positions.", log: logger, type: .error)
             return
         }
-        
         let (x1, y1) = beacon1
         let (x2, y2) = beacon2
         let A = 2 * (x2 - x1)
@@ -229,36 +224,19 @@ class QorvoBeaconManager: NSObject {
         let x = C / A
         let yTerm = (distance1 * distance1) - (x - x1) * (x - x1)
         let y = max(0, yTerm).squareRoot()
-        
         os_log("Calculated User Coordinates: (%.2f, %.2f)", log: logger, type: .info, x, y)
-    }
-    
-    // Helper: Get device ID from an NI Session.
-    func deviceIDFromSession(_ session: NISession) -> Int {
-        for (key, value) in referenceDict where value == session {
-            return key
-        }
-        return -1
-    }
-    
-    // Helper: Cache accessory discovery token.
-    func cacheToken(_ token: NIDiscoveryToken, accessoryName: String) {
-        accessoryMap[token] = accessoryName
     }
 }
 
 // MARK: - NISessionDelegate Conformance
 extension QorvoBeaconManager: NISessionDelegate {
-    
     func session(_ session: NISession,
                  didGenerateShareableConfigurationData shareableConfigurationData: Data,
                  for object: NINearbyObject) {
         guard let config = configuration,
               object.discoveryToken == config.accessoryDiscoveryToken else { return }
-        
         var msg = Data([MessageId.configureAndStart.rawValue])
         msg.append(shareableConfigurationData)
-        
         let deviceID = deviceIDFromSession(session)
         os_log("Sending shareable configuration data for device %d.", log: logger, type: .info, deviceID)
         sendDataToAccessory(data: msg, deviceID: deviceID)
@@ -285,13 +263,10 @@ extension QorvoBeaconManager: NISessionDelegate {
         let deviceID = deviceIDFromSession(session)
         deviceDistances[deviceID] = distance
         os_log("Updated device %d distance: %.2f meters.", log: logger, type: .info, deviceID, distance)
-        
         if deviceDistances.count == 2 {
             calculateUserCoordinates()
         }
-        
         if let direction = accessory.direction {
-            // Log computed directional (azimuth) data.
             let azimuthValue = Settings().isDirectionEnable ?
                 Int(90 * Double(azimuth(direction))) : Int(rad2deg(Double(azimuth(direction))))
             os_log("Device %d updated with direction (azimuth): %d", log: logger, type: .info, deviceID, azimuthValue)
@@ -342,13 +317,20 @@ extension QorvoBeaconManager: NISessionDelegate {
     }
     
     func shouldRetry(deviceID: Int) -> Bool {
-        // In your full implementation, you would check the accessory’s state.
+        // In your implementation, inspect the accessory state as needed.
         return true
+    }
+    
+    // Helper: Get device ID from an NI session.
+    func deviceIDFromSession(_ session: NISession) -> Int {
+        for (key, value) in referenceDict where value == session {
+            return key
+        }
+        return -1
     }
 }
 
 // MARK: - Utility Functions
-
 func azimuth(_ direction: simd_float3) -> Float {
     if Settings().isDirectionEnable {
         return asin(direction.x)
