@@ -4,14 +4,12 @@ import NearbyInteraction
 import simd
 import os
 
-// This file now focuses only on handling user coordinates and communicating with Flutter.
-
 public class UWBHandler: NSObject, FlutterPlugin, FlutterStreamHandler {
     
     var updateTimer: Timer?
     var eventSink: FlutterEventSink?
     var pendingResult: FlutterResult?
-    var connectedDevices: [QorvoDevice]?  // This should be updated by your BLE connection logic.
+    var connectedDevices: [QorvoDevice]?  // Updated by your BLE connection logic.
     let logger = os.Logger(subsystem: "com.example.uwbprivacyapp", category: "UWBHandler")
     
     // NI session for receiving location updates.
@@ -30,10 +28,9 @@ public class UWBHandler: NSObject, FlutterPlugin, FlutterStreamHandler {
     public override init() {
         super.init()
         niSession = NISession()
-        // Set the NI session delegate here if needed.
     }
     
-    // Calculate user coordinates using the distances from connected devices.
+    // Calculate coordinates using the first two connected devices.
     func calculateUserCoordinates() -> (x: Float, y: Float) {
         guard let devices = connectedDevices,
               devices.count >= 2,
@@ -42,7 +39,6 @@ public class UWBHandler: NSObject, FlutterPlugin, FlutterStreamHandler {
             return (0, 0)
         }
         
-        // Example beacon positions; adjust these according to your actual setup.
         let beacon1 = (x: Float(0.0), y: Float(0.0))
         let beacon2 = (x: Float(2.5), y: Float(0.0))
         
@@ -54,49 +50,38 @@ public class UWBHandler: NSObject, FlutterPlugin, FlutterStreamHandler {
         let yTerm = (distance1 * distance1) - ((x - beacon1.x) * (x - beacon1.x))
         let y = (yTerm > 0 ? sqrt(yTerm) : 0)
         
-        logger.info("Calculated coordinates: (\(x, privacy: .public), \(y, privacy: .public))")
+        // Minimal logging can be added here if desired.
         return (x, y)
     }
     
-    // MARK: - Method Channel Handler
     public func handle(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
         switch call.method {
         case "startScanning":
             pendingResult = result
-            logger.info("startScanning called in UWBHandler.")
-            // TODO: Insert your actual scanning/connection logic here.
-            // For now, assume that scanning begins and connectedDevices will be updated externally.
-            
         case "stopScanning":
-            // TODO: Insert your logic to stop scanning or disconnect devices, if needed.
             updateTimer?.invalidate()
             updateTimer = nil
             result(nil)
-            
         default:
             result(FlutterMethodNotImplemented)
         }
     }
     
-    func callResultIfNeeded() {
-        if let res = self.connectedCoordinatesResult(), let pending = pendingResult {
-            pending(res)
-            pendingResult = nil
-        }
-    }
-    
     func connectedCoordinatesResult() -> [String: Any]? {
         guard let devices = connectedDevices, devices.count >= 2 else { return nil }
+        
+        let beaconData = devices.prefix(2).compactMap { device -> [String: Any]? in
+            guard let distance = device.uwbLocation?.distance else { return nil }
+            return ["id": "\(device.deviceID)", "distance": distance]
+        }
+        
         let coords = calculateUserCoordinates()
-        // Here we use the first two devices' IDs as beacon IDs.
-        let beaconIDs = devices.prefix(2).map { "\($0.deviceID)" }
         return [
-            "beaconIDs": beaconIDs,
+            "beacons": beaconData,
             "coordinates": ["x": coords.x, "y": coords.y]
         ]
     }
     
-    // MARK: - FlutterStreamHandler Methods
     public func onListen(withArguments arguments: Any?, eventSink events: @escaping FlutterEventSink) -> FlutterError? {
         eventSink = events
         updateTimer?.invalidate()
@@ -117,7 +102,6 @@ public class UWBHandler: NSObject, FlutterPlugin, FlutterStreamHandler {
 }
 
 extension QorvoDevice {
-    // Convenience property for deviceID.
     var deviceID: Int {
         return bleUniqueID
     }
