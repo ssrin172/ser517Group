@@ -2,7 +2,6 @@ import Flutter
 import UIKit
 import NearbyInteraction
 import simd
-import os
 
 public class UWBHandler: NSObject, FlutterPlugin, FlutterStreamHandler {
     
@@ -10,7 +9,6 @@ public class UWBHandler: NSObject, FlutterPlugin, FlutterStreamHandler {
     var eventSink: FlutterEventSink?
     var pendingResult: FlutterResult?
     var connectedDevices: [QorvoDevice]?  // Updated by your BLE connection logic.
-    let logger = os.Logger(subsystem: "com.example.uwbprivacyapp", category: "UWBHandler")
     
     // NI session for receiving location updates.
     var niSession: NISession?
@@ -50,7 +48,6 @@ public class UWBHandler: NSObject, FlutterPlugin, FlutterStreamHandler {
         let yTerm = (distance1 * distance1) - ((x - beacon1.x) * (x - beacon1.x))
         let y = (yTerm > 0 ? sqrt(yTerm) : 0)
         
-        // Minimal logging can be added here if desired.
         return (x, y)
     }
     

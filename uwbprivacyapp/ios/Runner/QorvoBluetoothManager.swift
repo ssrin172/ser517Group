@@ -2,7 +2,6 @@ import Foundation
 import NearbyInteraction
 import CoreBluetooth
 import simd
-import os
 
 // MARK: - Service and Characteristic Definitions
 struct TransferService {
@@ -20,7 +19,6 @@ struct QorvoNIService {
 
 // MARK: - Data Structures
 
-/// Holds UWB location data.
 struct Location {
     var distance: Float
     var direction: simd_float3
@@ -28,7 +26,6 @@ struct Location {
     var noUpdate: Bool
 }
 
-/// Represents a Qorvo beacon device.
 class QorvoDevice {
     var blePeripheral: CBPeripheral
     var rxCharacteristic: CBCharacteristic?
@@ -53,29 +50,21 @@ class QorvoDevice {
     }
 }
 
-/// Status constants used to track device state.
 let statusDiscovered = "Discovered"
 let statusConnected = "Connected"
 let statusRanging = "Ranging"
 
-// Global array to keep track of discovered devices.
 var qorvoDevices = [QorvoDevice]()
 
 // MARK: - Bluetooth Manager Class
 
-/// This class manages the Bluetooth scanning, connection, and data exchange with Qorvo beacons.
-/// It has no UI logic—it only implements the underlying connection and communication.
 class QorvoBluetoothManager: NSObject {
     
-    // CoreBluetooth Central Manager.
     var centralManager: CBCentralManager!
-    
-    // Counters used in managing connection iterations.
     let defaultIterations = 5
     var writeIterationsComplete = 0
     var connectionIterationsComplete = 0
     
-    // Callback closures for notifying other parts of the logic.
     var accessorySynchHandler: ((Int, Bool) -> Void)?
     var accessoryConnectedHandler: ((Int) -> Void)?
     var accessoryDisconnectedHandler: ((Int) -> Void)?
@@ -84,28 +73,22 @@ class QorvoBluetoothManager: NSObject {
     var bluetoothReady = false
     var shouldStartWhenReady = false
     
-    let logger = os.Logger(subsystem: "com.example.apple-samplecode.QorvoAccessorySample", category: "QorvoBluetoothManager")
-    
     override init() {
         super.init()
         centralManager = CBCentralManager(delegate: self, queue: nil, options: [CBCentralManagerOptionShowPowerAlertKey: true])
-        // Start a timer to check for timed-out devices.
         Timer.scheduledTimer(timeInterval: 0.2, target: self, selector: #selector(timerHandler), userInfo: nil, repeats: true)
     }
     
     deinit {
         centralManager.stopScan()
-        logger.info("Scanning stopped.")
     }
     
-    // MARK: - Timer Handler
     @objc func timerHandler() {
         var index = 0
         for device in qorvoDevices {
             if device.blePeripheralStatus == statusDiscovered {
                 let timeStamp = Int64(Date().timeIntervalSince1970 * 1000.0)
                 if timeStamp > (device.bleTimestamp + 5000) {
-                    logger.info("Device \(device.blePeripheralName) timed-out and removed at index \(index)")
                     dataSourceHandler(nil, index)
                 }
             }
@@ -113,7 +96,6 @@ class QorvoBluetoothManager: NSObject {
         }
     }
     
-    // MARK: - Device Data Source Handling
     func dataSourceHandler(_ device: QorvoDevice?, _ index: Int) {
         if let device = device {
             qorvoDevices.append(device)
@@ -124,7 +106,6 @@ class QorvoBluetoothManager: NSObject {
         }
     }
     
-    // MARK: - Scanning and Connection Methods
     func start() {
         if bluetoothReady {
             startScan()
@@ -135,7 +116,6 @@ class QorvoBluetoothManager: NSObject {
     }
     
     private func startScan() {
-        logger.info("Scanning started.")
         centralManager.scanForPeripherals(withServices: [TransferService.serviceUUID, QorvoNIService.serviceUUID],
                                           options: [CBCentralManagerScanOptionAllowDuplicatesKey: true])
     }
@@ -147,7 +127,6 @@ class QorvoBluetoothManager: NSObject {
     func connectPeripheral(_ uniqueID: Int) throws {
         if let device = getDeviceFromUniqueID(uniqueID) {
             if device.blePeripheralStatus != statusDiscovered { return }
-            logger.info("Connecting to Peripheral \(device.blePeripheral)")
             device.blePeripheralStatus = statusConnected
             centralManager.connect(device.blePeripheral, options: nil)
         } else {
@@ -158,7 +137,6 @@ class QorvoBluetoothManager: NSObject {
     func disconnectPeripheral(_ uniqueID: Int) throws {
         if let device = getDeviceFromUniqueID(uniqueID) {
             if device.blePeripheralStatus == statusDiscovered { return }
-            logger.info("Disconnecting from Peripheral \(device.blePeripheral)")
             centralManager.cancelPeripheralConnection(device.blePeripheral)
         } else {
             throw BluetoothLECentralError.noPeripheral
@@ -166,7 +144,6 @@ class QorvoBluetoothManager: NSObject {
     }
     
     func sendData(_ data: Data, _ uniqueID: Int) throws {
-        logger.info("Sending Data to device \(uniqueID)")
         if getDeviceFromUniqueID(uniqueID) != nil {
             writeData(data, uniqueID)
         } else {
@@ -184,7 +161,6 @@ class QorvoBluetoothManager: NSObject {
         var rawPacket = [UInt8](repeating: 0, count: bytesToCopy)
         data.copyBytes(to: &rawPacket, count: bytesToCopy)
         let packetData = Data(rawPacket)
-        logger.info("Writing \(bytesToCopy) bytes to device \(uniqueID).")
         peripheral.writeValue(packetData, for: characteristic, type: .withResponse)
         writeIterationsComplete += 1
     }
@@ -194,42 +170,39 @@ class QorvoBluetoothManager: NSObject {
     }
 }
 
-// Define an error type for connection issues.
 enum BluetoothLECentralError: Error {
     case noPeripheral
 }
 
-// MARK: - CBCentralManagerDelegate
 extension QorvoBluetoothManager: CBCentralManagerDelegate {
     func centralManagerDidUpdateState(_ central: CBCentralManager) {
         switch central.state {
         case .poweredOn:
-            logger.info("CBManager is powered on")
             bluetoothReady = true
             if shouldStartWhenReady { start() }
         case .poweredOff:
-            logger.error("CBManager is not powered on")
+            break
         case .resetting:
-            logger.error("CBManager is resetting")
+            break
         case .unauthorized:
             handleCBUnauthorized()
         case .unknown:
-            logger.error("CBManager state is unknown")
+            break
         case .unsupported:
-            logger.error("Bluetooth is not supported on this device")
+            break
         @unknown default:
-            logger.error("A previously unknown central manager state occurred")
+            break
         }
     }
     
     func handleCBUnauthorized() {
         switch CBManager.authorization {
         case .denied:
-            logger.error("User denied Bluetooth access.")
+            break
         case .restricted:
-            logger.error("Bluetooth access is restricted.")
+            break
         default:
-            logger.error("Unexpected Bluetooth authorization state.")
+            break
         }
     }
     
@@ -248,21 +221,14 @@ extension QorvoBluetoothManager: CBCentralManagerDelegate {
                                      peripheralName: name,
                                      timeStamp: timeStamp)
         dataSourceHandler(newDevice, 0)
-        logger.info("Discovered peripheral: \(newDevice.blePeripheralName) (UniqueID: \(newDevice.bleUniqueID))")
-        
         do {
             try connectPeripheral(peripheral.hashValue)
-        } catch {
-            logger.error("Failed to connect to peripheral: \(error)")
-        }
+        } catch { }
     }
     
-    func centralManager(_ central: CBCentralManager, didFailToConnect peripheral: CBPeripheral, error: Error?) {
-        logger.error("Failed to connect to peripheral \(peripheral): \(String(describing: error))")
-    }
+    func centralManager(_ central: CBCentralManager, didFailToConnect peripheral: CBPeripheral, error: Error?) { }
     
     func centralManager(_ central: CBCentralManager, didConnect peripheral: CBPeripheral) {
-        logger.info("Peripheral Connected")
         connectionIterationsComplete += 1
         writeIterationsComplete = 0
         peripheral.delegate = self
@@ -270,7 +236,6 @@ extension QorvoBluetoothManager: CBCentralManagerDelegate {
     }
     
     func centralManager(_ central: CBCentralManager, didDisconnectPeripheral peripheral: CBPeripheral, error: Error?) {
-        logger.info("Peripheral Disconnected: \(peripheral.name ?? "Unknown")")
         let uniqueID = peripheral.hashValue
         if let device = getDeviceFromUniqueID(uniqueID) {
             device.bleTimestamp = Int64(Date().timeIntervalSince1970 * 1000.0)
@@ -280,34 +245,25 @@ extension QorvoBluetoothManager: CBCentralManagerDelegate {
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
             do {
                 try self.connectPeripheral(uniqueID)
-                self.logger.info("Reconnecting to \(peripheral.name ?? "Unknown")")
-            } catch {
-                self.logger.error("Reconnection failed: \(error)")
-            }
+            } catch { }
         }
     }
 }
 
-// MARK: - CBPeripheralDelegate
 extension QorvoBluetoothManager: CBPeripheralDelegate {
     func peripheral(_ peripheral: CBPeripheral, didModifyServices invalidatedServices: [CBService]) {
         for service in invalidatedServices {
             if service.uuid == TransferService.serviceUUID {
-                logger.error("Transfer service invalidated; rediscovering services")
                 peripheral.discoverServices([TransferService.serviceUUID])
             }
             if service.uuid == QorvoNIService.serviceUUID {
-                logger.error("Qorvo NI service invalidated; rediscovering services")
                 peripheral.discoverServices([QorvoNIService.serviceUUID])
             }
         }
     }
     
     func peripheral(_ peripheral: CBPeripheral, didDiscoverServices error: Error?) {
-        if let error = error {
-            logger.error("Error discovering services: \(error.localizedDescription)")
-            return
-        }
+        if let error = error { return }
         guard let services = peripheral.services else { return }
         for service in services {
             peripheral.discoverCharacteristics([TransferService.rxCharacteristicUUID,
@@ -319,10 +275,7 @@ extension QorvoBluetoothManager: CBPeripheralDelegate {
     }
     
     func peripheral(_ peripheral: CBPeripheral, didDiscoverCharacteristicsFor service: CBService, error: Error?) {
-        if let error = error {
-            logger.error("Error discovering characteristics: \(error.localizedDescription)")
-            return
-        }
+        if let error = error { return }
         let uniqueID = peripheral.hashValue
         guard let device = getDeviceFromUniqueID(uniqueID),
               let characteristics = service.characteristics else { return }
@@ -331,12 +284,10 @@ extension QorvoBluetoothManager: CBPeripheralDelegate {
             if characteristic.uuid == TransferService.rxCharacteristicUUID ||
                 characteristic.uuid == QorvoNIService.rxCharacteristicUUID {
                 device.rxCharacteristic = characteristic
-                logger.info("Discovered RX characteristic: \(characteristic) for device \(uniqueID)")
             }
             if characteristic.uuid == TransferService.txCharacteristicUUID ||
                 characteristic.uuid == QorvoNIService.txCharacteristicUUID {
                 device.txCharacteristic = characteristic
-                logger.info("Discovered TX characteristic: \(characteristic) for device \(uniqueID)")
                 peripheral.setNotifyValue(true, for: characteristic)
             }
         }
@@ -345,13 +296,8 @@ extension QorvoBluetoothManager: CBPeripheralDelegate {
     }
     
     func peripheral(_ peripheral: CBPeripheral, didUpdateValueFor characteristic: CBCharacteristic, error: Error?) {
-        if let error = error {
-            logger.error("Error receiving update for characteristic: \(error.localizedDescription)")
-            return
-        }
+        if let error = error { return }
         guard let characteristicData = characteristic.value else { return }
-        let byteString = characteristicData.map { String(format: "0x%02x", $0) }.joined(separator: ", ")
-        logger.info("Received \(characteristicData.count) bytes: \(byteString)")
         let uniqueID = peripheral.hashValue
         if let device = getDeviceFromUniqueID(uniqueID), let handler = accessoryDataHandler {
             handler(characteristicData, device.blePeripheralName, uniqueID)
@@ -359,20 +305,15 @@ extension QorvoBluetoothManager: CBPeripheralDelegate {
     }
     
     func peripheral(_ peripheral: CBPeripheral, didUpdateNotificationStateFor characteristic: CBCharacteristic, error: Error?) {
-        if let error = error {
-            logger.error("Error updating notification state: \(error.localizedDescription)")
-            return
-        }
+        if let error = error { return }
         if characteristic.isNotifying {
-            logger.info("Notification enabled for \(characteristic)")
+            // Notification enabled.
         } else {
-            logger.info("Notification disabled for \(characteristic). Initiating cleanup.")
             cleanup()
         }
     }
     
     func cleanup() {
         centralManager.stopScan()
-        logger.info("Cleaning up peripheral connection.")
     }
 }

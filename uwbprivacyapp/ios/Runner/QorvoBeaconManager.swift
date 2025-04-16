@@ -44,10 +44,18 @@ class QorvoBeaconManager: NSObject {
     var deviceDistances: [Int: Float] = [:]
 
     /// Fixed beacon positions used for coordinate calculations.
+    /// We'll assume device 112456485 is at (0.0, 0.0),
+    /// and device 143285168 is at (2.5, 0.0).
     let beaconPositions: [Int: (Float, Float)] = [
-        112456485: (0.0, 0.0),   // Example beacon 1 position
-        143285168: (2.5, 0.0)      // Example beacon 2 position
+        112456485: (0.0, 0.0),  // Beacon A
+        143285168: (2.5, 0.0)   // Beacon B
     ]
+    
+    /// Timer used to throttle communications/logging to 1-second intervals.
+    var communicationTimer: Timer?
+    
+    /// Tracks the last time each device reported a distance update.
+    var lastUpdateTimes: [Int: Date] = [:]
 
     // MARK: - Initialization
     override init() {
@@ -56,7 +64,7 @@ class QorvoBeaconManager: NSObject {
         bluetoothManager.accessoryDataHandler = { [weak self] data, accessoryName, deviceID in
             self?.accessorySharedData(data: data, accessoryName: accessoryName, deviceID: deviceID)
         }
-        bluetoothManager.accessorySynchHandler = { [weak self] index, insert in
+        bluetoothManager.accessorySynchHandler = { [weak self] _, _ in
             // No logging needed here.
         }
         bluetoothManager.accessoryConnectedHandler = { [weak self] deviceID in
@@ -67,14 +75,63 @@ class QorvoBeaconManager: NSObject {
         }
     }
     
+    deinit {
+        communicationTimer?.invalidate()
+    }
+    
     // MARK: - Public Methods for Scanning
     func startScanning() {
         bluetoothManager.start()
+        // Schedule a timer to communicate with the beacon (and log) every 0.2 second.
+        DispatchQueue.main.async {
+            self.communicationTimer = Timer.scheduledTimer(timeInterval: 0.2,
+                                                           target: self,
+                                                           selector: #selector(self.communicationTimerFired),
+                                                           userInfo: nil,
+                                                           repeats: true)
+        }
     }
     
     func stopScanning() {
+        // Invalidate the communication timer.
+        communicationTimer?.invalidate()
+        communicationTimer = nil
+
         for deviceID in referenceDict.keys {
             disconnectFromAccessory(deviceID: deviceID)
+        }
+    }
+    
+    // MARK: - Timer Callback for Periodic Communication and Conditional Logging
+    @objc func communicationTimerFired() {
+        // 1) For each active accessory session, send a small "notify" command (optional).
+        for deviceID in referenceDict.keys {
+            let msg = Data([MessageId.iOSNotify.rawValue])
+            sendDataToAccessory(data: msg, deviceID: deviceID)
+        }
+        
+        // 2) Only log if BOTH known devices (112456485 and 143285168) have updated in the last second.
+        let deviceA = 112456485
+        let deviceB = 143285168
+        guard deviceDistances.keys.contains(deviceA),
+              deviceDistances.keys.contains(deviceB) else {
+            // We only log if both devices exist in deviceDistances.
+            return
+        }
+        
+        // Check last update times for both devices.
+        let now = Date()
+        
+        guard let timeA = lastUpdateTimes[deviceA],
+              let timeB = lastUpdateTimes[deviceB] else {
+            return
+        }
+        
+        let updatedRecentlyA = now.timeIntervalSince(timeA) < 1.0
+        let updatedRecentlyB = now.timeIntervalSince(timeB) < 1.0
+        if updatedRecentlyA && updatedRecentlyB {
+            // If both have new data within the last second, log them together, plus the coordinates.
+            logBothDeviceDistancesAndCoordinates()
         }
     }
     
@@ -152,13 +209,63 @@ class QorvoBeaconManager: NSObject {
         }
     }
     
-    // New helper that logs all device distances as an array-style string.
-    private func logAllDeviceDistances() {
-        let distancesString = deviceDistances.map { key, distance in
-            "device \(key): \(String(format: "%.2f", distance)) meters"
+    // MARK: - Logging Helpers
+    
+    /// Logs both beacon distances AND the user coordinates based on those distances.
+    private func logBothDeviceDistancesAndCoordinates() {
+        let deviceA = 112456485
+        let deviceB = 143285168
+        
+        guard let distA = deviceDistances[deviceA],
+              let distB = deviceDistances[deviceB] else {
+            return
         }
-        let output = "{ " + distancesString.joined(separator: ", ") + " }"
-        os_log("Distances update: %@", log: OSLog.default, type: .info, output)
+        
+        // Calculate (x, y) using the two distances.
+        let (coordX, coordY) = calculateUserCoordinates(distA: distA, distB: distB)
+        
+        // Log everything in a single line.
+        let distanceString = String(format: "{ device %d: %.2f m, device %d: %.2f m }",
+                                    deviceA, distA, deviceB, distB)
+        let coordsString = String(format: "(x: %.2f, y: %.2f)", coordX, coordY)
+        os_log("Distances: %@ -> Coordinates: %@", log: .default, type: .info, distanceString, coordsString)
+    }
+    
+    /// Given distances from beaconA and beaconB, compute the user's (x,y).
+    /// Basic 2-beacon trilateration assuming a linear arrangement (beaconB is 2.5m to the right of beaconA).
+    private func calculateUserCoordinates(distA: Float, distB: Float) -> (Float, Float) {
+        let deviceA = 112456485
+        let deviceB = 143285168
+        
+        guard let beaconA = beaconPositions[deviceA],
+              let beaconB = beaconPositions[deviceB] else {
+            // If we have no known positions, just return (0,0).
+            return (0,0)
+        }
+        
+        let (x1, y1) = beaconA
+        let (x2, y2) = beaconB
+        
+        // Convert distances to squared for reuse.
+        let distA2 = distA * distA
+        let distB2 = distB * distB
+        
+        // Standard 2-beacon trilateration math
+        // A = 2 * (x2 - x1)
+        let A = 2 * (x2 - x1)
+        // C = distA^2 - distB^2 - x1^2 + x2^2 - y1^2 + y2^2
+        let C = distA2 - distB2 - (x1*x1) + (x2*x2) - (y1*y1) + (y2*y2)
+        
+        // x = C / A
+        let x = C / A
+        
+        // yTerm = distA^2 - (x - x1)^2
+        let yTerm = distA2 - (x - x1)*(x - x1)
+        
+        // If yTerm is negative, that suggests the distances don't form a real intersection; clamp at 0.
+        let y = (yTerm > 0) ? sqrt(yTerm) : 0
+        
+        return (x, y)
     }
 }
 
@@ -183,13 +290,18 @@ extension QorvoBeaconManager: NISessionDelegate {
     }
     
     func session(_ session: NISession, didUpdate nearbyObjects: [NINearbyObject]) {
+        // Update distance values from the first nearby object.
         guard let accessory = nearbyObjects.first,
               let distance = accessory.distance else { return }
+        
         let deviceID = deviceIDFromSession(session)
+        // Store the new distance
         deviceDistances[deviceID] = distance
         
-        // Log all devices distances in one combined array-style format.
-        logAllDeviceDistances()
+        // Record the last time we updated this device
+        lastUpdateTimes[deviceID] = Date()
+        
+        // No direct logging here; rely on the timer-based approach in communicationTimerFired().
     }
     
     func session(_ session: NISession,
@@ -218,12 +330,14 @@ extension QorvoBeaconManager: NISessionDelegate {
             break
         default:
             sendDataToAccessory(data: Data([MessageId.stop.rawValue]), deviceID: deviceID)
-            if let session = referenceDict[deviceID] {
-                session.invalidate()
-                referenceDict[deviceID] = NISession()
-                referenceDict[deviceID]?.delegate = self
-                sendDataToAccessory(data: Data([MessageId.initialize.rawValue]), deviceID: deviceID)
+            if let oldSession = referenceDict[deviceID] {
+                oldSession.invalidate()
+                referenceDict.removeValue(forKey: deviceID)
             }
+            let newSession = NISession()
+            newSession.delegate = self
+            referenceDict[deviceID] = newSession
+            sendDataToAccessory(data: Data([MessageId.initialize.rawValue]), deviceID: deviceID)
         }
     }
     
