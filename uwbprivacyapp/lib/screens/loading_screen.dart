@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../services/uwb_service.dart';
@@ -12,31 +13,47 @@ class LoadingScreen extends StatefulWidget {
 
 class _LoadingScreenState extends State<LoadingScreen> {
   bool _showError = false;
+  late final UWBService _uwbService;
+  Timer? _timeoutTimer;
 
   @override
   void initState() {
     super.initState();
-    final uwbService = Provider.of<UWBService>(context, listen: false);
+    _uwbService = Provider.of<UWBService>(context, listen: false);
 
-    // Wait 3 seconds before starting the scanning process.
-    Future.delayed(const Duration(seconds: 3), () async {
-      try {
-        await uwbService.startScanning();
-      } catch (e) {
-        print("Scanning error: $e");
-      }
+    // Start scanning immediately.
+    _uwbService.startScanning();
 
-      if (uwbService.isConnected && uwbService.connectedBeacons.length >= 2) {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => const SensorsScreen()),
-        );
-      } else {
+    // Set a longer timeout (for example, 20 seconds) before showing error.
+    _timeoutTimer = Timer(const Duration(seconds: 20), () {
+      // If even after 20 seconds there is no valid connection, then show error.
+      if (!_uwbService.isConnected) {
         setState(() {
           _showError = true;
         });
       }
     });
+
+    // Listen for changes in the UWBService.
+    _uwbService.addListener(_serviceListener);
+  }
+
+  void _serviceListener() {
+    if (_uwbService.isConnected) {
+      // Only checking _isConnected is sufficient now
+      _timeoutTimer?.cancel();
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => const SensorsScreen()),
+      );
+    }
+  }
+
+  @override
+  void dispose() {
+    _timeoutTimer?.cancel();
+    _uwbService.removeListener(_serviceListener);
+    super.dispose();
   }
 
   @override

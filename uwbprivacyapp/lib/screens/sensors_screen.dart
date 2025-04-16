@@ -9,7 +9,7 @@ class SensorsScreen extends StatefulWidget {
 }
 
 class _SensorsScreenState extends State<SensorsScreen> {
-  // Define the EventChannel used for receiving coordinate updates.
+  // The EventChannel used for receiving coordinate updates from native code.
   static const EventChannel _eventChannel =
       EventChannel("com.example.uwbprivacyapp/updates");
 
@@ -32,10 +32,11 @@ class _SensorsScreenState extends State<SensorsScreen> {
           stream: _eventChannel.receiveBroadcastStream(),
           builder: (context, AsyncSnapshot<dynamic> snapshot) {
             if (snapshot.hasData) {
-              // Expecting a Map with keys "beaconIDs" and "coordinates"
+              // Expecting a Map with keys "beacons" and "coordinates"
               final data = snapshot.data as Map<dynamic, dynamic>;
-              final beaconIDs = data['beaconIDs'] as List<dynamic>;
+              final beaconData = data['beacons'] as List<dynamic>;
               final coordinates = data['coordinates'] as Map<dynamic, dynamic>;
+
               return Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -48,8 +49,9 @@ class _SensorsScreenState extends State<SensorsScreen> {
                         color: Colors.white),
                   ),
                   const SizedBox(height: 10),
-                  ...beaconIDs.map((id) => Text(
-                        "Beacon ID: $id",
+                  // Iterate over each beacon and show its details.
+                  ...beaconData.map((beacon) => Text(
+                        "Beacon ID: ${beacon['id']} - Distance: ${beacon['distance']} m",
                         style:
                             const TextStyle(fontSize: 18, color: Colors.white),
                       )),

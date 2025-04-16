@@ -57,7 +57,7 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
               const SizedBox(height: 8.0),
               const Text(
-                "HI PRANUT JAIN !",
+                "HI USER... !",
                 style: TextStyle(
                     fontSize: 28,
                     fontWeight: FontWeight.bold,
