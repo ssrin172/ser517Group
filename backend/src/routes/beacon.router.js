@@ -12,4 +12,4 @@ router.post("/", createOrUpdateSensors);
 // The beaconGroupId in the URL will be normalized.
 router.get("/:beaconGroupId/sensors", getSensorsForBeaconGroup);
 
-export  default  router;
+export default router;

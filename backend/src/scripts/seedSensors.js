@@ -24,8 +24,7 @@ mongoose.connect(dbURI, { useNewUrlParser: true, useUnifiedTopology: true })
                 description: "A high-definition camera that monitors the room for security and activity tracking.",
                 mitigationDetails: "Ensure proper lighting and enforce privacy protocols to prevent unauthorized access.",
                 purpose: "To provide visual surveillance and enhance overall room security.",
-                // Using canonical beaconGroupId ("3B807668" comes before "57944B02" when sorted)
-                beaconGroupId: "3B807668-57944B02",
+                beaconGroupId: "112456485-143285168",
                 dataCaptures: "Video/Image"
             },
             {
@@ -38,7 +37,7 @@ mongoose.connect(dbURI, { useNewUrlParser: true, useUnifiedTopology: true })
                 description: "A sensitive microphone that captures ambient audio data in the room.",
                 mitigationDetails: "Audio processing is conducted with strict privacy protocols and local data handling.",
                 purpose: "To detect voice commands and monitor environmental sound for smart responses.",
-                beaconGroupId: "3B807668-57944B02",
+                beaconGroupId: "112456485-143285168",
                 dataCaptures: "Audio"
             },
             {
@@ -51,7 +50,7 @@ mongoose.connect(dbURI, { useNewUrlParser: true, useUnifiedTopology: true })
                 description: "Monitors room temperature to ensure a comfortable climate.",
                 mitigationDetails: "Regular calibration is performed to maintain accurate readings.",
                 purpose: "To assist in climate control and energy efficiency within the room.",
-                beaconGroupId: "3B807668-57944B02",
+                beaconGroupId: "112456485-143285168",
                 dataCaptures: "Temperature Readings"
             },
             {
@@ -64,7 +63,7 @@ mongoose.connect(dbURI, { useNewUrlParser: true, useUnifiedTopology: true })
                 description: "Detects movement within its range to trigger alerts or actions.",
                 mitigationDetails: "Optimized to minimize false alarms from non-intrusive movements.",
                 purpose: "To enhance room security by detecting unauthorized movement.",
-                beaconGroupId: "3B807668-57944B02",
+                beaconGroupId: "112456485-143285168",
                 dataCaptures: "Motion Events"
             }
         ];

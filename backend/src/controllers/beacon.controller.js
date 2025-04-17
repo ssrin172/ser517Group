@@ -16,7 +16,7 @@ const normalizeBeaconGroupId = (beaconGroupId) => {
  * Create or update sensors for a given beacon group.
  * The request body must contain:
  * {
- *   "beaconGroupId": "3B807668-57944B02", // or any order, it will be normalized
+ *   "beaconGroupId": "112456485-143285168", // or any order, it will be normalized
  *   "sensors": [
  *     {
  *       "sensorId": "sensor001",
