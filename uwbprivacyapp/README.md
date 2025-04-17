@@ -1,16 +1,52 @@
-# uwbprivacyapp
+# 👁️‍🗨️ SENSAI - Privacy Application
 
-A new Flutter project.
+> **"Know who's watching."**  
+A mobile app that empowers users with **transparency** and **control** over the **sensor devices** tracking them in any room using UWB beacon detection.
 
-## Getting Started
+---
 
-This project is a starting point for a Flutter application.
+## 🧠 About the Project
 
-A few resources to get you started if this is your first Flutter project:
+**SENSAI** is a privacy-awareness application that connects your smartphone to **UWB beacons** present in a room. Once connected, it fetches all **sensor devices** linked to those beacons and displays:
+- 📍 The **types** of sensors (e.g., Cameras, Microphones, Motion Detectors)
+- 📊 The **data being captured**
+- 🔐 **Mitigation strategies** to avoid being tracked
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
+This ensures that users are always aware of what devices are collecting data around them.
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+---
+
+## 🚀 Getting Started
+
+### 🔄 Reset Build State
+Clean up any previous build files or cached states:
+
+```bash
+flutter clean
+```
+
+## 📦 Install Flutter Dependencies
+```
+flutter pub get
+```
+
+## 🍎 Install CocoaPods (for iOS)
+```
+cd ios
+pod install
+cd ..
+```
+
+## ▶️ Run the Flutter App
+```
+flutter run
+```
+
+## 🛠️ Features
+- 🔎 Detects Sensors: Automatically identifies all sensor devices in a room.
+
+- 🛰️ Beacon Connection: Utilizes UWB beacons to determine your location.
+
+- 👁️ Real-Time Awareness: Lists what kind of data (Audio, Video, Motion) is being collected.
+
+- 🧯 Mitigation Tips: Suggests ways to avoid sensor tracking.
