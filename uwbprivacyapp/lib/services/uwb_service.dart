@@ -1,3 +1,5 @@
+// lib/services/uwb_service.dart
+
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
@@ -15,6 +17,9 @@ class UWBService with ChangeNotifier {
   List<String> _connectedBeacons = [];
   Map<String, dynamic> _coordinates = {};
   List<Map<String, dynamic>> _sensorsData = [];
+
+  /// Guard so we fetch sensors only once per session.
+  bool _hasFetchedSensors = false;
 
   bool get isConnected => _isConnected;
   List<String> get connectedBeacons => _connectedBeacons;
@@ -34,77 +39,86 @@ class UWBService with ChangeNotifier {
     }
 
     _subscription = _eventChannel.receiveBroadcastStream().listen(
-      (data) async {
-        debugPrint("📲 EventChannel → $data");
-        if (data is! Map) return;
+          _onEvent,
+          onError: (e, st) => debugPrint("⚠️ EventChannel error: $e\n$st"),
+        );
+  }
 
-        final status = data["status"] ?? "scanning";
+  Future<void> _onEvent(dynamic data) async {
+    debugPrint("📲 EventChannel → $data");
+    if (data is! Map) return;
 
-        // parse beacons
-        final beaconsRaw = data['beacons'] as List<dynamic>? ?? [];
-        _connectedBeacons = beaconsRaw
-            .map((b) {
-              if (b is Map && b.containsKey('id')) return b['id'].toString();
-              if (b is int) return b.toString();
-              return '';
-            })
-            .where((id) => id.isNotEmpty)
-            .toList();
+    final status = data["status"] as String? ?? "scanning";
 
-        // parse coords
-        _coordinates = Map<String, dynamic>.from(
-            data['coordinates'] as Map? ?? {'x': 0, 'y': 0});
+    // parse beacon IDs
+    final beaconsRaw = data['beacons'] as List<dynamic>? ?? [];
+    _connectedBeacons = beaconsRaw
+        .map((b) {
+          if (b is Map && b.containsKey('id')) return b['id'].toString();
+          if (b is int) return b.toString();
+          return '';
+        })
+        .where((id) => id.isNotEmpty)
+        .toList();
 
-        _isConnected = _connectedBeacons.isNotEmpty;
-        debugPrint("🔗 isConnected=$_isConnected, beacons=$_connectedBeacons");
+    // parse coordinates
+    _coordinates = Map<String, dynamic>.from(
+        data['coordinates'] as Map<dynamic, dynamic>? ?? {'x': 0, 'y': 0});
 
-        if (status == "connected" && _connectedBeacons.length >= 2) {
-          final sorted = List<String>.from(_connectedBeacons)..sort();
-          final groupId = sorted.join('-');
-          debugPrint("🌐 Constructed beaconGroupId: $groupId");
-          await _fetchSensorData(groupId);
-        } else {
-          debugPrint(
-              "ℹ️ status='$status'; need 2 beacons before fetching sensors.");
-          _sensorsData = [];
-          notifyListeners();
-        }
-      },
-      onError: (e, st) => debugPrint("⚠️ EventChannel error: $e\n$st"),
-    );
+    _isConnected = _connectedBeacons.isNotEmpty;
+    debugPrint("🔗 isConnected=$_isConnected, beacons=$_connectedBeacons");
+
+    // 1️⃣ If we have 2+ beacons and haven't fetched sensors yet → fetch once
+    if (status == "connected" &&
+        _connectedBeacons.length >= 2 &&
+        !_hasFetchedSensors) {
+      final sorted = List<String>.from(_connectedBeacons)..sort();
+      final groupId = sorted.join('-');
+      debugPrint("🌐 Fetching sensors for groupId: $groupId");
+      await _fetchSensorData(groupId);
+      _hasFetchedSensors = true;
+    }
+
+    // 2️⃣ If we lose all beacons → reset so next session can fetch anew
+    if (_connectedBeacons.isEmpty) {
+      debugPrint("🚪 All beacons disconnected — clearing cached sensors");
+      _hasFetchedSensors = false;
+      _sensorsData = [];
+    }
+
+    notifyListeners();
   }
 
   String get _backendHost {
     if (kIsWeb) return 'localhost';
     if (Platform.isAndroid) return '10.0.2.2';
-    return '192.168.0.118'; // your LAN IP for iOS device
+    return '192.168.0.118'; // your LAN IP (or use config/env)
   }
 
   Future<void> _fetchSensorData(String beaconGroupId) async {
     final url = Uri.parse(
         'http://$_backendHost:8000/api/v1/beacons/$beaconGroupId/sensors');
-    debugPrint('GET $url');
+    debugPrint("GET $url");
 
     try {
       final resp = await http.get(url);
-      debugPrint('📥 ${resp.statusCode}: ${resp.body}');
+      debugPrint("📥 ${resp.statusCode}: ${resp.body}");
 
       if (resp.statusCode == 200) {
-        final Map<String, dynamic> wrapper = jsonDecode(resp.body);
-        final List<dynamic> list = wrapper['data'] as List<dynamic>? ?? [];
+        final wrapper = jsonDecode(resp.body) as Map<String, dynamic>;
+        final list = wrapper['data'] as List<dynamic>? ?? [];
         _sensorsData =
             list.map((e) => Map<String, dynamic>.from(e as Map)).toList();
-        debugPrint('✅ Parsed sensorsData: $_sensorsData');
+        debugPrint("✅ Loaded ${_sensorsData.length} sensors");
       } else {
-        debugPrint('❌ No sensors for $beaconGroupId');
+        debugPrint(
+            "❌ No sensors for $beaconGroupId (status ${resp.statusCode})");
         _sensorsData = [];
       }
     } catch (e, st) {
-      debugPrint('🚨 fetchSensorData error: $e\n$st');
+      debugPrint("🚨 fetchSensorData error: $e\n$st");
       _sensorsData = [];
     }
-
-    notifyListeners();
   }
 
   Future<void> stopScanning() async {
@@ -117,10 +131,13 @@ class UWBService with ChangeNotifier {
       rethrow;
     }
 
+    // Full reset for next session
     _isConnected = false;
-    _connectedBeacons.clear();
+    _connectedBeacons = [];
     _coordinates = {};
-    _sensorsData.clear();
+    _sensorsData = [];
+    _hasFetchedSensors = false;
+
     await _subscription?.cancel();
     _subscription = null;
     notifyListeners();

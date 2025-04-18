@@ -60,7 +60,7 @@ class QorvoBeaconManager: NSObject {
     // Fixed beacon positions used for coordinate calculations.
     let beaconPositions: [Int: (Float, Float)] = [
         112456485: (0.0, 0.0),
-        143285168: (2.5, 0.0)
+        143285168: (7.0, 0.0)
     ]
     
     // MARK: - Public Methods for Scanning

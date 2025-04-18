@@ -5,46 +5,56 @@ import '../services/uwb_service.dart';
 import 'sensors_screen.dart';
 
 class LoadingScreen extends StatefulWidget {
-  const LoadingScreen({super.key});
+  /// If true, immediately show the error state with this message
+  final bool initialShowError;
+  final String initialErrorMessage;
+
+  const LoadingScreen({
+    super.key,
+    this.initialShowError = false,
+    this.initialErrorMessage = '',
+  });
 
   @override
   State<LoadingScreen> createState() => _LoadingScreenState();
 }
 
 class _LoadingScreenState extends State<LoadingScreen> {
-  bool _showError = false;
   late final UWBService _uwbService;
   Timer? _timeoutTimer;
+  bool _showError = false;
+  String _errorMessage = '';
 
   @override
   void initState() {
     super.initState();
     _uwbService = Provider.of<UWBService>(context, listen: false);
 
-    // Start scanning immediately.
-    _uwbService.startScanning();
-
-    // Set a longer timeout (for example, 20 seconds) before showing error.
-    _timeoutTimer = Timer(const Duration(seconds: 20), () {
-      // If even after 20 seconds there is no valid connection, then show error.
-      if (!_uwbService.isConnected) {
-        setState(() {
-          _showError = true;
-        });
-      }
-    });
-
-    // Listen for changes in the UWBService.
-    _uwbService.addListener(_serviceListener);
+    // If we're not starting in error, kick off a scan + timeout
+    if (!widget.initialShowError) {
+      _uwbService.startScanning();
+      _timeoutTimer = Timer(const Duration(seconds: 20), () {
+        if (!_uwbService.isConnected) {
+          setState(() {
+            _showError = true;
+            _errorMessage = 'Couldn’t scan';
+          });
+        }
+      });
+      _uwbService.addListener(_serviceListener);
+    } else {
+      // immediate error state
+      _showError = true;
+      _errorMessage = widget.initialErrorMessage;
+    }
   }
 
   void _serviceListener() {
     if (_uwbService.isConnected) {
-      // Only checking _isConnected is sufficient now
       _timeoutTimer?.cancel();
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (context) => const SensorsScreen()),
+        MaterialPageRoute(builder: (_) => const SensorsScreen()),
       );
     }
   }
@@ -86,9 +96,10 @@ class _LoadingScreenState extends State<LoadingScreen> {
           fit: BoxFit.contain,
         ),
         const SizedBox(height: 20),
-        const Text(
-          "Couldn't scan :)",
-          style: TextStyle(fontSize: 18, color: Colors.white),
+        Text(
+          widget.initialShowError ? _errorMessage : "Couldn't scan :)",
+          style: const TextStyle(fontSize: 18, color: Colors.white),
+          textAlign: TextAlign.center,
         ),
         const SizedBox(height: 10),
         ElevatedButton(
@@ -101,6 +112,7 @@ class _LoadingScreenState extends State<LoadingScreen> {
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(10),
             ),
+            padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
           ),
           child: const Text("Scan Again"),
         ),
