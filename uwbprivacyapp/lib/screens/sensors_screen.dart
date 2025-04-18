@@ -1,11 +1,64 @@
+// lib/screens/sensors_screen.dart
+
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../services/uwb_service.dart';
 import '../widgets/background_scaffold.dart';
+import 'loading_screen.dart';
 
-class SensorsScreen extends StatelessWidget {
+class SensorsScreen extends StatefulWidget {
   const SensorsScreen({Key? key}) : super(key: key);
+
+  @override
+  _SensorsScreenState createState() => _SensorsScreenState();
+}
+
+class _SensorsScreenState extends State<SensorsScreen> {
+  late final UWBService _uwbService;
+
+  @override
+  void initState() {
+    super.initState();
+    _uwbService = Provider.of<UWBService>(context, listen: false);
+    _uwbService.addListener(_checkOutOfRange);
+  }
+
+  Future<void> _checkOutOfRange() async {
+    // only start checking once we've fetched sensor data
+    if (_uwbService.sensorsData.isEmpty) return;
+
+    final coords = _uwbService.coordinates;
+    if (!coords.containsKey('x') || !coords.containsKey('y')) return;
+
+    final x = (coords['x'] as num).toDouble();
+    final y = (coords['y'] as num).toDouble();
+
+    // midpoint = (3.5, 0), radius = 4.5
+    final dx = x - 3.5;
+    final dy = y - 0.0;
+    final dist = sqrt(dx * dx + dy * dy);
+    debugPrint("🎯 Distance from center: $dist");
+
+    if (dist > 4.5) {
+      await _uwbService.stopScanning();
+      if (!mounted) return;
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(
+          builder: (_) => const LoadingScreen(
+            initialShowError: true,
+            initialErrorMessage: 'Out of range',
+          ),
+        ),
+      );
+    }
+  }
+
+  @override
+  void dispose() {
+    _uwbService.removeListener(_checkOutOfRange);
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -28,11 +81,8 @@ class SensorsScreen extends StatelessWidget {
 
     return BackgroundScaffold(
       appBar: AppBar(
-        title: const Text(
-          'Sensors Info',
-          style: TextStyle(color: Colors.white),
-        ),
-        centerTitle: false,
+        title:
+            const Text('Sensors Info', style: TextStyle(color: Colors.white)),
         backgroundColor: Colors.transparent,
         elevation: 0,
       ),
@@ -56,6 +106,7 @@ class SensorsScreen extends StatelessWidget {
                       ? 'Loading Sensors Info...'
                       : 'Waiting For Connection...',
                   style: const TextStyle(color: Colors.white70, fontSize: 16),
+                  textAlign: TextAlign.center,
                 ),
               ),
       ),

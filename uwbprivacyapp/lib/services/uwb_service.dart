@@ -17,8 +17,6 @@ class UWBService with ChangeNotifier {
   List<String> _connectedBeacons = [];
   Map<String, dynamic> _coordinates = {};
   List<Map<String, dynamic>> _sensorsData = [];
-
-  /// Guard so we fetch sensors only once per session.
   bool _hasFetchedSensors = false;
 
   bool get isConnected => _isConnected;
@@ -68,7 +66,7 @@ class UWBService with ChangeNotifier {
     _isConnected = _connectedBeacons.isNotEmpty;
     debugPrint("🔗 isConnected=$_isConnected, beacons=$_connectedBeacons");
 
-    // 1️⃣ If we have 2+ beacons and haven't fetched sensors yet → fetch once
+    // fetch sensors once when we first have 2+ beacons
     if (status == "connected" &&
         _connectedBeacons.length >= 2 &&
         !_hasFetchedSensors) {
@@ -79,7 +77,7 @@ class UWBService with ChangeNotifier {
       _hasFetchedSensors = true;
     }
 
-    // 2️⃣ If we lose all beacons → reset so next session can fetch anew
+    // reset if all beacons drop
     if (_connectedBeacons.isEmpty) {
       debugPrint("🚪 All beacons disconnected — clearing cached sensors");
       _hasFetchedSensors = false;
@@ -92,7 +90,7 @@ class UWBService with ChangeNotifier {
   String get _backendHost {
     if (kIsWeb) return 'localhost';
     if (Platform.isAndroid) return '10.0.2.2';
-    return '192.168.0.118'; // your LAN IP (or use config/env)
+    return '192.168.0.118';
   }
 
   Future<void> _fetchSensorData(String beaconGroupId) async {
@@ -123,6 +121,11 @@ class UWBService with ChangeNotifier {
 
   Future<void> stopScanning() async {
     debugPrint("🛑 stopScanning()");
+    // 1️⃣ Cancel the Dart side subscription immediately
+    await _subscription?.cancel();
+    _subscription = null;
+
+    // 2️⃣ Tell native to stop
     try {
       await _methodChannel.invokeMethod('stopScanning');
       debugPrint("✅ Invoked native stopScanning");
@@ -131,15 +134,12 @@ class UWBService with ChangeNotifier {
       rethrow;
     }
 
-    // Full reset for next session
+    // 3️⃣ Clear all Flutter state
     _isConnected = false;
     _connectedBeacons = [];
     _coordinates = {};
     _sensorsData = [];
     _hasFetchedSensors = false;
-
-    await _subscription?.cancel();
-    _subscription = null;
     notifyListeners();
   }
 }
