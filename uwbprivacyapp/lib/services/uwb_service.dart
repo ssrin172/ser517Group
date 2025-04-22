@@ -95,7 +95,7 @@ class UWBService with ChangeNotifier {
 
   Future<void> _fetchSensorData(String beaconGroupId) async {
     final url = Uri.parse(
-        'http://$_backendHost:8000/api/v1/beacons/$beaconGroupId/sensors');
+        'http://ser517group.onrender.com/api/v1/beacons/$beaconGroupId/sensors');
     debugPrint("GET $url");
 
     try {
