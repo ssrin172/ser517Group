@@ -6,7 +6,7 @@ import '../models/sensor.dart';
 import 'uwb_service.dart';
 
 class APIService {
-  static const String baseUrl = 'https://ser517group.onrender.com/api/v1/beacons';
+  static const String baseUrl = 'https://ser517group.onrender.com';
 
   final BuildContext context;
 
