@@ -9,6 +9,7 @@
   },
   "scripts": {
     "dev": "nodemon -r dotenv/config --experimental-json-modules src/server.js"
+    "start": "node index.js"
   },
   "keywords": [
     "node",
