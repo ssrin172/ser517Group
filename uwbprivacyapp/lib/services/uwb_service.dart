@@ -87,15 +87,11 @@ class UWBService with ChangeNotifier {
     notifyListeners();
   }
 
-  String get _backendHost {
-    if (kIsWeb) return 'localhost';
-    if (Platform.isAndroid) return '10.0.2.2';
-    return '192.168.0.118';
-  }
+ String get _backendHost => 'ser517group.onrender.com';
 
   Future<void> _fetchSensorData(String beaconGroupId) async {
     final url = Uri.parse(
-        'http://ser517group.onrender.com/api/v1/beacons/$beaconGroupId/sensors');
+        'https://ser517group.onrender.com/api/v1/beacons/$beaconGroupId/sensors');
     debugPrint("GET $url");
 
     try {
