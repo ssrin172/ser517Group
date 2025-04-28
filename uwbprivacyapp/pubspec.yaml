@@ -19,6 +19,7 @@ dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^5.0.0
+  flutter_launcher_icons: ^0.13.1  # <-- added safely under dev_dependencies
 
 flutter:
   uses-material-design: true
@@ -29,3 +30,8 @@ flutter:
     - assets/images/sensor_logo.png
     - assets/images/loading.gif
     - assets/images/error.png
+
+flutter_icons:  # <-- added safely at the bottom
+  android: true
+  ios: true
+  image_path: "assets/images/app_icon.png"
