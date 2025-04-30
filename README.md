@@ -1,5 +1,9 @@
 # SENSAI - USER PRIVACY APPLICATION
 
+## About the Application
+
+SENSAI is a cutting-edge application designed to enhance user privacy by leveraging ultra-wideband technology for precise real-time location tracking. The application provides users with detailed information about sensors present within their confined range, alerts them about potential tracking risks, and offers mitigation techniques to avoid being tracked. By utilizing Qorvo's DWM3001 CDK beacons, SENSAI ensures secure and accurate positioning, enabling users to maintain control over their location data. This innovative approach sets a new standard in the privacy domain, combining advanced technology with user-centric design to deliver a seamless and secure experience.
+
 ## Running the Application
 
 ## Requirements for Running the Application
